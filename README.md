@@ -185,6 +185,8 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 
 * Automatische Kalibrierung der Rollladen über Powermessung
 
+* WebSerial zur Ausgabe von weiteren Informationen über die Website
+
 ---
 
 ## Changelog
