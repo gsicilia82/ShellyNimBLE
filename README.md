@@ -187,6 +187,8 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 
 * WebSerial zur Ausgabe von weiteren Informationen über die Website
 
+* Test ob OTA flash direkt auf Shelly Firmware funktioniert
+
 ---
 
 ## Changelog
