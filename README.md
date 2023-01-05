@@ -2,7 +2,7 @@
 
 Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core) als BLE Scanner zu verwenden. Es gibt tolle Projekte, wie espresense, die aber noch keine SingleCore ESP32 unterstützen.
 
-Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur STeuerung von Lichtern oder Rollläden zu verwenden. Die Kommuikation erfolgt über MQTT (optimiert für ioBroker).
+Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommuikation erfolgt über MQTT (optimiert für ioBroker).
 
 Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT Instanz läuft. Ich bevorzuge unter ioBroker den MQTT-Client, da ich Mosquitto als MQTT-Server verwende. Wenn ein Shelly Plus 2PM als Cover eingerichtet wird, wären nachfolgend die ioBroker States zu sehen:
 
@@ -23,6 +23,12 @@ Dies sollte für alle, außer nachfolgende States erledigt werden:
 * Online (Anzeige des Online-Zustandes)
 * Switch1 und ggf. Switch2 (Anzeige ob Inputs am Shelly anliegen)
 
+
+
+Mit der aktuellen Version können nur BLE Geräte über ihre MAC gefiltert werden (Funktion als Whitelist). Im ioBroker State `mqtt-client.0.shellyscanner.devices.master.Filter` können bis zu 10 MAC Adressen eingegeben werden. Die MAC Adressen müssen über ein Komma getrennt werden.
+
+
+
 ***
 
 ## Erstmalig Flashen mit esptool
@@ -41,7 +47,7 @@ Hilfreiche Befehle sind zum Beispiel:
   
    `esptool.py --baud 115200 write_flash 0x0 firmware.bin`
 
-Ich selbst bevorzuge das Flashen mit PlatformIO innerhalb von VS-Code
+Ich selbst bevorzuge das Flashen mit PlatformIO innerhalb von VS-Code. Zur weiteren Anwendung mit esptool kann kein Support geleistet werden.
 
 ***
 
@@ -55,7 +61,7 @@ Wenn VSCode installiert wurde, kann PlatformIO als Plugin installiert werden:
 
 ![ ](pictures/vscode/010_vscode_install_platformio.png  "pio install")
 
-Als nächstes wird dieses Projekt von Github heruntergeladen (als zip) und lokal entpackt. Dieser Ordner wird PlatformIO als Projekt hinzugefügt:
+Als nächstes wird dieses Projekt als zip von Github heruntergeladen und lokal entpackt. Dieser Ordner wird PlatformIO als Projekt hinzugefügt:
 
 Meistens wird das Fenster "PIO Home" automatisch geöffnet, wenn dies nicht der Fall ist, unten über das Haus-Icon manuell öffnen.
 
