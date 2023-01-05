@@ -790,7 +790,9 @@ void initCaptivePortal(){
     captivePortalActivated = true;
 
 	Serial.println("Setting up AP Mode");
-	WiFi.mode(WIFI_AP); 
+	WiFi.mode(WIFI_AP);
+
+
 	WiFi.softAP("esp32-Shelly");
 	Serial.print("AP IP address: ");Serial.println(WiFi.softAPIP());
 	Serial.println("Setting up Async WebServer");
