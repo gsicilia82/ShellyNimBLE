@@ -757,7 +757,7 @@ void setupApServer(){
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
 
     Serial.println("Disconnected from MQTT. Restarting ESP...");
-    //ESP.restart();
+    ESP.restart();
 }
 
 
@@ -851,6 +851,7 @@ void initNetwork(){
 	mqttClient.onConnect( onMqttConnect);
     mqttClient.onMessage( onMqttMessage);
     mqttClient.setServer( mqttServer.c_str(), mqttPort);
+    mqttClient.setWill( topicOnline.c_str(), 1, true, "false");
     mqttClient.connect();
     timeout = 0;
     while ( !mqttClient.connected() ){
