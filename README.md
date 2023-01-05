@@ -23,11 +23,7 @@ Dies sollte für alle, außer nachfolgende States erledigt werden:
 * Online (Anzeige des Online-Zustandes)
 * Switch1 und ggf. Switch2 (Anzeige ob Inputs am Shelly anliegen)
 
-
-
 Mit der aktuellen Version können nur BLE Geräte über ihre MAC gefiltert werden (Funktion als Whitelist). Im ioBroker State `mqtt-client.0.shellyscanner.devices.master.Filter` können bis zu 10 MAC Adressen eingegeben werden. Die MAC Adressen müssen über ein Komma getrennt werden.
-
-
 
 ***
 
@@ -113,7 +109,9 @@ Diese Profile können auch später im Einsatz über MQTT angepasst werden. Es ka
 
 In ioBroker wird die Config z.B. über `mqtt-client.0.shellyscanner.devices.master.Config`dargestellt und kann auch hierüber angepasst werden.
 
-Für SwitchX_Mode sind folgende Inhalte möglich: Switch, Button, Detached
+Für SwitchX_Mode sind folgende Inhalte möglich: Switch, Button, Detached.
+
+Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Plus 2PM geladen.
 
 ```
 {  
