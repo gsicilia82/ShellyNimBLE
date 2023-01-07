@@ -162,6 +162,20 @@ bool convertJsonToConfig( String& config, bool withPub=true){
     }
     else PinRelay2   = tmpPin;
 
+    tmpPin = doc["I2C_SCL"];
+    if ( tmpPin == 0 || tmpPin < -1 || tmpPin > 38) {
+        report( "ERROR: Non valid pin received for I2C_SCL!", withPub);
+        return false;
+    }
+    else PinSCL      = tmpPin;
+
+    tmpPin = doc["I2C_SDA"];
+    if ( tmpPin == 0 || tmpPin < -1 || tmpPin > 38) {
+        report( "ERROR: Non valid pin received for I2C_SDA!", withPub);
+        return false;
+    }
+    else PinSDA      = tmpPin;
+
     tmpPin = doc["ADE7953"];
     if ( tmpPin == 0 || tmpPin < -1 || tmpPin > 38) {
         report( "ERROR: Non valid pin received for ADE7953!", withPub);
@@ -540,8 +554,13 @@ void SetupShelly() {
 
     pubsubShelly();
 
+    // --------------------- Init ADE7953 ---------------------
+
+    myADE7953.initialize( PinSCL, PinSDA);
+
 }
 
+long slowLoop = millis();
 void LoopShelly() {
 
     // --------------------- Check switch entries ---------------------
@@ -564,6 +583,17 @@ void LoopShelly() {
     // --------------------- Time measurement for long press Reset button ---------------------
 
     if ( flagLongPress) switchTimeLongPressR = millis() - switchLastTimeR;
+
+    // --------------------- Init ADE7953 ---------------------
+
+    if ( millis() - slowLoop > 5000){
+        
+        auto tmp = myADE7953.getData(); 
+        Serial.println( tmp.active_power[1]);
+        pub( topicMessage, String( tmp.active_power[1] ) );
+
+        slowLoop = millis();
+    }
 
 }
 
@@ -984,11 +1014,13 @@ void setup() {
         // --------------------- Start OTA function over WebServer ---------------------
 
         server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->redirect("/update");
+            request->redirect("/webserial");
         });
 
         AsyncElegantOTA.begin(&server);    // Start ElegantOTA on "/update"
         Serial.println("HTTP OTA server started");
+
+        // --------------------- Start WebServer ---------------------
 
         server.begin();
     }

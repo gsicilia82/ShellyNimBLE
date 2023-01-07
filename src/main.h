@@ -18,15 +18,21 @@
 #include <DNSServer.h>
 #include <html.h>
 
+// Powermeter
+#include <ADE7953.h>
+
+
 NimBLEScan* pBLEScan;
 
-//NimBLEAddress a("c2:2d:9f:fe:46:ec");
-
 AsyncMqttClient mqttClient;
+
 Preferences preferences;
 
 DNSServer dnsServer;
+
 AsyncWebServer server(80);
+
+ADE7953 myADE7953; 
 
 // ------------------------ Shelly Plus 2PM Cover as default config ------------------------
 
@@ -84,7 +90,7 @@ bool switchStateR, switchLastStateR;
 unsigned long switchTimeLongPressR = 0;
 bool flagLongPress = false;
 
-int PinSwitchR, PinSwitch1, PinSwitch2, PinRelay1, PinRelay2, PinADE7953;
+int PinSwitchR, PinSwitch1, PinSwitch2, PinRelay1, PinRelay2, PinSCL, PinSDA, PinADE7953;
 
 String switchMode1, switchMode2; // possible switchMode: BUTTON or SWITCH or DETACHED
 
