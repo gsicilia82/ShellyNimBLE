@@ -1,5 +1,5 @@
 /*
-  This script is based on Tasmota ADE7953 implementation and was modified to get it work as simple as possible.
+  This script is based on Tasmota ADE7953 implementation and was modified and simplified as possible.
   https://github.com/arendst/Tasmota
 */
 
@@ -131,7 +131,6 @@ enum Ade7953CalibrationRegisters {
   ADE7943_CAL_PHCAL
 };
 
-ENERGY Energy;
 
 const uint8_t  ADE7953_CALIBREGS = 6;
 const uint16_t Ade7953CalibRegs[2][ADE7953_CALIBREGS] {
@@ -150,7 +149,7 @@ const uint16_t Ade7953Registers[2][ADE7953_REGISTERS] {
 const float ADE7953_LSB_PER_WATTSECOND = 2.5;
 const float ADE7953_POWER_CORRECTION = 23.41494;  // See https://github.com/arendst/Tasmota/pull/16941
 
-enum EnergyCalibration { ENERGY_POWER_CALIBRATION, ENERGY_VOLTAGE_CALIBRATION, ENERGY_CURRENT_CALIBRATION, ENERGY_FREQUENCY_CALIBRATION };
+
 
 struct Ade7953 {
   uint32_t voltage_rms[2] = { 0, 0 };
@@ -215,23 +214,6 @@ int32_t Ade7953Read(uint16_t reg) {
   return response;
 }
 
-uint32_t EnergyGetCalibration(uint32_t chan, uint32_t cal_type) {
-  uint32_t channel = ((1 == chan) && (2 == Energy.phase_count)) ? 1 : 0;
-  if (channel) {
-    switch (cal_type) {
-      case ENERGY_POWER_CALIBRATION: return ADE7953_PREF;
-      case ENERGY_VOLTAGE_CALIBRATION: return ADE7953_UREF;
-      case ENERGY_CURRENT_CALIBRATION: return ADE7953_IREF;
-    }
-  } else {
-    switch (cal_type) {
-      case ENERGY_POWER_CALIBRATION: return ADE7953_PREF;
-      case ENERGY_VOLTAGE_CALIBRATION: return ADE7953_UREF;
-      case ENERGY_CURRENT_CALIBRATION: return ADE7953_IREF;
-    }
-  }
-  return 0;
-}
 
 void Ade7953SetCalibration(uint32_t regset, uint32_t calibset) {
   Ade7953.cs_index = calibset;
@@ -290,25 +272,6 @@ void Ade7953Defaults() {
 }
 
 
-void Ade7953DrvInit() {
-    uint32_t pin_irq = 27;
-    pinMode(pin_irq, INPUT);                         // Related to resetPins() - Must be set to input
-
-    int pin_reset = 4;                               // -1 if not defined
-
-    if (pin_reset >= 0) {
-      digitalWrite(pin_reset, 0);
-      pinMode(pin_reset, OUTPUT);                    // Reset pin ADE7953
-      delay(1);                                      // To initiate a hardware reset, this pin must be brought low for a minimum of 10 μs.
-      digitalWrite(pin_reset, 1);
-      pinMode(pin_reset, INPUT);
-    }
-    delay(100);                                      // Need 100mS to init ADE7953
-
-    Ade7953Defaults();
-
-}
-
 //****************Object Definition*****************
 ADE7953::ADE7953(){}
 //**************************************************
@@ -320,7 +283,7 @@ void ADE7953::initialize( int SCL, int SDA) {
 
   Wire.begin( _SDA, _SCL);
 
-  Ade7953DrvInit();
+  Ade7953Defaults();
 
   uint32_t chips = 1;
   for (uint32_t chip = 0; chip < chips; chip++) {
@@ -379,28 +342,36 @@ ENERGY ADE7953::getData() {
     }
   }
 
-    float divider;
-    for (uint32_t channel = 0; channel < 2; channel++) {
+  ENERGY Energy;
+  float divider;
+  for (uint32_t channel = 0; channel < 2; channel++) {
 
-      float power_calibration = (float)EnergyGetCalibration(channel, ENERGY_POWER_CALIBRATION) / 10;
+    float power_calibration = (float)ADE7953_PREF / 10;
 
-      power_calibration /= ADE7953_POWER_CORRECTION;
+    power_calibration /= ADE7953_POWER_CORRECTION;
 
-      float voltage_calibration = (float)EnergyGetCalibration(channel, ENERGY_VOLTAGE_CALIBRATION);
-      float current_calibration = (float)EnergyGetCalibration(channel, ENERGY_CURRENT_CALIBRATION) * 10;
+    float voltage_calibration = (float)ADE7953_UREF;
+    float current_calibration = (float)ADE7953_IREF* 10;
 
-      Energy.frequency[channel] = 223750.0f / ((float)reg[channel][5] + 1);
+    divider = (Ade7953.calib_data[channel][ADE7953_CAL_VGAIN] != ADE7953_GAIN_DEFAULT) ? 10000 : voltage_calibration;
+    Energy.voltage[channel] = (float)Ade7953.voltage_rms[channel] / divider;
 
-      divider = (Ade7953.calib_data[channel][ADE7953_CAL_VGAIN] != ADE7953_GAIN_DEFAULT) ? 10000 : voltage_calibration;
-      Energy.voltage[channel] = (float)Ade7953.voltage_rms[channel] / divider;
+    divider = (Ade7953.calib_data[channel][ADE7953_CAL_IGAIN + channel] != ADE7953_GAIN_DEFAULT) ? 100000 : current_calibration;
+    Energy.current[channel] = (float)Ade7953.current_rms[channel] / divider;
 
-      divider = (Ade7953.calib_data[channel][ADE7953_CAL_WGAIN + channel] != ADE7953_GAIN_DEFAULT) ? ADE7953_LSB_PER_WATTSECOND : power_calibration;
-      Energy.active_power[channel] = (float)Ade7953.active_power[channel] / divider;
+/*
+    // Tasmota solution
+    divider = (Ade7953.calib_data[channel][ADE7953_CAL_WGAIN + channel] != ADE7953_GAIN_DEFAULT) ? ADE7953_LSB_PER_WATTSECOND : power_calibration;
+    Energy.power[channel] = (float)Ade7953.active_power[channel] / divider;
+*/
 
-      divider = (Ade7953.calib_data[channel][ADE7953_CAL_IGAIN + channel] != ADE7953_GAIN_DEFAULT) ? 100000 : current_calibration;
-      Energy.current[channel] = (float)Ade7953.current_rms[channel] / divider;
-    }
+    // Tasmota solution doesn't works for me, simple workaround
+    Energy.power[channel] = Energy.current[channel] * Energy.voltage[channel];
+    
+  }
 
-    return Energy;
+  Energy.powerAcc = Energy.power[0] + Energy.power[1];
+
+  return Energy;
+
 }
-

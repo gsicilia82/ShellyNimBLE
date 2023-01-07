@@ -32,7 +32,9 @@ DNSServer dnsServer;
 
 AsyncWebServer server(80);
 
-ADE7953 myADE7953; 
+ADE7953 myADE7953;
+
+ENERGY Energy;
 
 // ------------------------ Shelly Plus 2PM Cover as default config ------------------------
 
@@ -59,7 +61,7 @@ int arrRssi[10][3] = {
 
 // ------------------------ MQTT variables ------------------------
 
-String topicMain, deviceName, topicFilter, topicDevice, topicResults, topicMessage, topicOnline, topicIp, topicConfig, topicRestart, topicHardReset, topicSwitch1, topicSwitch2, topicRelaySet1, topicRelaySet2, topicCoverTime, topicPosSet, topicCoverStop;
+String tdbg, topicMain, deviceName, topicFilter, topicDevice, topicResults, topicMessage, topicOnline, topicIp, topicConfig, topicRestart, topicHardReset, topicSwitch1, topicSwitch2, topicRelaySet1, topicRelaySet2, topicCoverTime, topicPosSet, topicCoverStop;
 
 // ------------------------ Shelly related variables ------------------------
 
@@ -102,3 +104,6 @@ bool captivePortalActivated = false;
 // helper to temp. ignore arriving MQTT mesages
 unsigned long mqttDisableTime = 0;
 bool mqttDisabled = false;
+
+bool measEnergy = false;
+int measIntervall = 100;

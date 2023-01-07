@@ -6,13 +6,10 @@
 #include <Wire.h>
 
 struct ENERGY {
-  float voltage[2];             // 123.1 V
-  float current[2];             // 123.123 A
-  float active_power[2];        // 123.1 W
-  float frequency[2];           // 123.1 Hz
-
-  uint8_t phase_count;                          // Number of phases active
-
+  float voltage[2];      // 123.1 V
+  float current[2];      // 123.123 A
+  float power[2];        // 123.1 W
+  float powerAcc;        // = power[0] + power[1]
 };
 
 class ADE7953 {

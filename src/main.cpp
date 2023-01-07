@@ -230,15 +230,15 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLO
     else if ( cmd == "OPENING"){
         coverStartTime = millis();
         coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverTargetPosition - coverPosition) / 100 ;
-        coverDirection = cmd; // activates if statement in loop()
-
+        coverDirection = cmd; // enable time measurement in loop()
+        measEnergy = true;    // enable power measurement in loop()
     }
     else if ( cmd == "CLOSING"){
         // activate loop statement and set time limit in loop observation
         coverStartTime = millis();
         coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverPosition - coverTargetPosition) / 100 ;
-        coverDirection = cmd; // activates if statement in loop()
-
+        coverDirection = cmd; // enable time measurement in loop()
+        measEnergy = true;    // enable power measurement in loop()
     }
 
 }
@@ -261,6 +261,7 @@ bool stopCover(){
         Serial.println( "COVER: Set Relay 2 to: false");
         pub( topicRelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
     }
+    measEnergy = false;    // disable power measurement in loop()
     calcCoverPosition( "STOPPED");
     return true;
 }
@@ -305,11 +306,17 @@ void setRelayCover( byte relay, bool state, int coverTargetPosition=100){
 }
 
 
+void coverCalibrateRoutine(){
+    measEnergy = true;
+}
+
+
 // Only used in mode LIGHT
 void setRelayLight( byte relay, bool state){
 
     if ( getRelayState ( relay) == state) return; // Do nothing if relay is in desired state
 
+    measEnergy = state; // enable/disable power measurement in loop()
     if ( relay == 1){
         digitalWrite(PinRelay1, state);
         Serial.println( "LIGHT: Set Relay 1 to: " + boolToString( state) );
@@ -324,15 +331,20 @@ void setRelayLight( byte relay, bool state){
     }
 }
 void toggleRelay( byte relay){
+    bool state;
     if ( relay == 1){
         digitalWrite(PinRelay1, !digitalRead(PinRelay1) );
         Serial.println( "Toggle Relay 1");
-        pub( topicRelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
+        state = digitalRead( PinRelay1) == HIGH;
+        measEnergy = state; // enable/disable power measurement in loop()
+        pub( topicRelaySet1, state ? "true" : "false" , true);
     }
     else if ( relay == 2){
         digitalWrite(PinRelay2, !digitalRead(PinRelay2) );
         Serial.println( "Toggle Relay 2");
-        pub( topicRelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
+        state = digitalRead( PinRelay2) == HIGH;
+        measEnergy = state; // enable/disable power measurement in loop()
+        pub( topicRelaySet2, state ? "true" : "false" , true);
     }
 }
 
@@ -355,10 +367,10 @@ void loopCheckSw1() {
         }
         else if ( devMode == "COVER"){
             if ( switchMode1 == "BUTTON" && switchState1){
-                setRelayCover( 1, !digitalRead(PinRelay1), 100);// 101% as max cover position to be sure
+                setRelayCover( 1, !digitalRead(PinRelay1), 100);
             }
             else if ( switchMode1 == "SWITCH") {
-                setRelayCover( 1, switchState1, 100);// 101% as max cover position to be sure
+                setRelayCover( 1, switchState1, 100);
             }
         }
     }
@@ -533,6 +545,11 @@ void SetupShelly() {
         topicRelaySet2  = topicDevice + "/CoverDown";
     }
 
+    // --------------------- Set measurement interval for ADE7953 ---------------------
+
+    if ( devMode == "COVER") measIntervall = 100;
+    else measIntervall = 5000;
+
     // --------------------- Init Switches and Relays ---------------------
 
     pinMode( PinSwitch1, INPUT_PULLDOWN);
@@ -569,6 +586,26 @@ void LoopShelly() {
     loopCheckSw2();
     loopCheckSwR();
 
+    // --------------------- Read values from ADE7953 ---------------------
+
+    if ( measEnergy && millis() - slowLoop > measIntervall){ // Intervall = 100 if COVER else 5000
+        
+        Energy = myADE7953.getData();
+
+        #ifdef DEBUG
+            pub( tdbg+"voltage0", String( Energy.voltage[0] ) );
+            pub( tdbg+"current0", String( Energy.current[0] ) );
+            pub( tdbg+"power0",   String( Energy.power[0]   ) );
+            pub( tdbg+"voltage1", String( Energy.voltage[1] ) );
+            pub( tdbg+"current1", String( Energy.current[1] ) );
+            pub( tdbg+"power1",   String( Energy.power[1]   ) );
+
+            pub( tdbg+"powerAcc", String( Energy.powerAcc  ) );
+        #endif
+
+        slowLoop = millis();
+    }
+
     // --------------------- Time measurement for cover mode  ---------------------
 
     if ( devMode == "COVER"){
@@ -584,16 +621,6 @@ void LoopShelly() {
 
     if ( flagLongPress) switchTimeLongPressR = millis() - switchLastTimeR;
 
-    // --------------------- Init ADE7953 ---------------------
-
-    if ( millis() - slowLoop > 5000){
-        
-        auto tmp = myADE7953.getData(); 
-        Serial.println( tmp.active_power[1]);
-        pub( topicMessage, String( tmp.active_power[1] ) );
-
-        slowLoop = millis();
-    }
 
 }
 
@@ -933,6 +960,8 @@ void initMqttTopics( String deviceName){
     topicCoverTime  = topicDevice + "/SetMaxCoverTime";
     topicPosSet     = topicDevice + "/SetPosition";
     topicCoverStop  = topicDevice + "/CoverStop";
+
+    tdbg = topicDevice + "/Debug/Dbg_";
 }
 
 void setup() {
