@@ -27,6 +27,22 @@ Mit der aktuellen Version können nur BLE Geräte über ihre MAC gefiltert werde
 
 ***
 
+## Firmware Binaries unter Releases
+
+Zu jedem Release werden zwei Dateien hinzugefügt:
+
+* firmware_full.bin
+
+* firmware_update.bin
+
+
+
+Wenn **erstmalig** mit esptool geflasht wird, muss **firmware_full.bin** verwendet werden. Hier sind alle benötigten Partitionen vorhanden, weshalb diese Binary eine Größe von 4MB aufweist.
+
+Zukünftige **Updates** können über die **WebUI** des Shelly erfolgen. Es ist eine simple OTA Funktionalität integriert. Hier wird dann die **firmware_update.bin** verwendet, damit Einstellungen, wie die Konfiguration, Filter, WIFI etc. beibehalten werden.
+
+---
+
 ## Erstmalig Flashen mit esptool
 
 Das Flashen kann über esptool.py erfolgen, was von hier bezogen werden kann:
@@ -35,15 +51,17 @@ Das Flashen kann über esptool.py erfolgen, was von hier bezogen werden kann:
 
 Hilfreiche Befehle sind zum Beispiel:
 
+* Backup der original Firmware
+  
+  `esptool.py read_flash 0x0 0x400000 fw-backup-4M.bin`
+
 * Löschen des Flash-Speicher:
   
    `esptool.py erase_flash`
 
 * Schreiben des Flashspeichers:
   
-   `esptool.py --baud 115200 write_flash 0x0 firmware.bin`
-
-Ich selbst bevorzuge das Flashen mit PlatformIO innerhalb von VS-Code. Zur weiteren Anwendung mit esptool kann kein Support geleistet werden.
+   `esptool.py --baud 115200 write_flash 0x0 firmware_full.bin`
 
 ***
 
