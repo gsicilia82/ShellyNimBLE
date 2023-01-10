@@ -220,13 +220,16 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLO
         // calc actual position and report/save
         unsigned long deltaTime = millis() - coverStartTime;
 
-        if ( coverDirection == "OPENING"){
+        if ( coverCalibState == CALIBRATED && coverDirection == "OPENING"){
             coverPosition = coverPosition + (int)( deltaTime*100 / ( coverMaxTime*1000) +0.5);
             coverPosition = coverPosition > 100 ? 100 : coverPosition;
         }
-        else if ( coverDirection == "CLOSING"){
+        else if ( coverCalibState == CALIBRATED && coverDirection == "CLOSING"){
             coverPosition = coverPosition - (int)( deltaTime*100 / ( coverMaxTime*1000) +0.5);
             coverPosition = coverPosition < 0 ? 0 : coverPosition;
+        }
+        else{
+            coverPosition = -1;
         }
         coverDirection = "STOPPED";
         writeInt( "coverPosition", coverPosition);
@@ -234,15 +237,26 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLO
 
     }
     else if ( cmd == "OPENING"){
+        // activate loop statement and set time limit in loop observation
         coverStartTime = millis();
-        coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverTargetPosition - coverPosition) / 100 ;
+        if ( coverCalibState == CALIBRATED){
+            coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverTargetPosition - coverPosition) / 100 ;
+        }
+        else {
+            coverTargetTime = coverStartTime + ( 100*1000); // default 100s if not calibrated
+        }
         coverDirection = cmd; // enable time measurement in loop()
         if ( PinADE7953 != -1) measEnergy = true;    // enable power measurement in loop()
     }
     else if ( cmd == "CLOSING"){
         // activate loop statement and set time limit in loop observation
         coverStartTime = millis();
-        coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverPosition - coverTargetPosition) / 100 ;
+        if ( coverCalibState == CALIBRATED){
+            coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverPosition - coverTargetPosition) / 100 ;
+        }
+        else {
+            coverTargetTime = coverStartTime + ( 100*1000); // default 100s if not calibrated
+        }
         coverDirection = cmd; // enable time measurement in loop()
         if ( PinADE7953 != -1) measEnergy = true;    // enable power measurement in loop()
     }
@@ -321,7 +335,7 @@ void setRelayCover( byte relay, bool state, int coverTargetPosition=100){
 void coverCalibrateRoutine(){
     if ( PinADE7953 != -1) measEnergy = true;
     else {
-        report( "Calibration not possible ADE7953 disabled!");
+        report( "Calibration not possible with disabled ADE7953!");
         return;
     }
 
@@ -353,6 +367,11 @@ void coverCalibrateRoutine(){
 
 // Only used in mode LIGHT
 void setRelayLight( byte relay, bool state){
+
+    if ( devMode == "COVER"){
+        Serial.println( "Call function setRelayLight not allowed in COVER mode!!!");
+        return;
+    }
 
     if ( getRelayState ( relay) == state) return; // Do nothing if relay is in desired state
 
@@ -676,12 +695,12 @@ void LoopShelly() {
 
         slowLoop = millis();
 
-        // --------------------- If calibration routine started and not finished, call routine ---------------------
+        // --------------------- If calibration routine running callback routine ---------------------
 
         if ( coverCalibState > NOT_CALIBRATED && coverCalibState < CALIBRATED) coverCalibrateRoutine();
     }
 
-    // --------------------- Time measurement for cover mode  ---------------------
+    // --------------------- Stop cover if target time is reached ---------------------
 
     if ( devMode == "COVER"){
         if ( coverDirection != "STOPPED" && millis() > coverTargetTime){
