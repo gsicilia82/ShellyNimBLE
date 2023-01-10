@@ -539,6 +539,19 @@ bool MqttCommandShelly(String& topic, String& pay) {
 }
 
 
+void initMqttTopicsShelly(){
+
+    Topic.Switch1    = Topic.Device + "/Switch1";
+    Topic.Switch2    = Topic.Device + "/Switch2";
+    Topic.RelaySet1  = Topic.Device + "/SetRelay1"; // Will be changed in case of COVER
+    Topic.RelaySet2  = Topic.Device + "/SetRelay2"; // Will be changed in case of COVER
+
+    Topic.PosSet     = Topic.Device + "/SetPosition";
+    Topic.CoverStop  = Topic.Device + "/CoverStop";
+    Topic.CoverCalib = Topic.Device + "/CoverStartCalibration";
+}
+
+
 void pubsubShelly() {
 
     pub( Topic.Config, config, true);
@@ -576,7 +589,7 @@ void SetupShelly() {
     config = readString( "config", config);
     convertJsonToConfig( config);
 
-    // --------------------- Read values from non-volatile memory if necessary---------------------
+    // --------------------- Read values from non-volatile memory if in COVER mode ---------------------
 
     if ( devMode == "COVER"){
         coverCalibState = readInt( "coverCalibState", coverCalibState);
@@ -588,6 +601,10 @@ void SetupShelly() {
             writeInt( "coverPosition", coverPosition);
         }
     }
+
+    // --------------------- Init MQTT topics ---------------------
+
+    initMqttTopicsShelly();
 
     // --------------------- Modify topics for COVER mode ---------------------
 
@@ -619,7 +636,7 @@ void SetupShelly() {
         pinMode( PinRelay2, OUTPUT);
         digitalWrite(PinRelay2, LOW);
     }
-    
+  
     // --------------------- Publish init state ---------------------
 
     pubsubShelly();
@@ -629,6 +646,7 @@ void SetupShelly() {
     if ( PinADE7953 != -1) myADE7953.initialize( PinSCL, PinSDA);
 
 }
+
 
 long slowLoop = millis();
 void LoopShelly() {
@@ -1000,7 +1018,7 @@ void initNetwork(){
 }
 
 
-void initMqttTopics( String deviceName){
+void initMqttTopics(){
 
     // global definde in main.h
     Topic.Main    = "shellyscanner"; // mqtt main topic
@@ -1014,15 +1032,6 @@ void initMqttTopics( String deviceName){
     Topic.Restart    = Topic.Device + "/Restart";
     Topic.HardReset  = Topic.Device + "/HardReset";
     Topic.Filter     = Topic.Device + "/Filter";
-
-    Topic.Switch1    = Topic.Device + "/Switch1";
-    Topic.Switch2    = Topic.Device + "/Switch2";
-    Topic.RelaySet1  = Topic.Device + "/SetRelay1"; // Will be changed in case of COVER
-    Topic.RelaySet2  = Topic.Device + "/SetRelay2"; // Will be changed in case of COVER
-
-    Topic.PosSet     = Topic.Device + "/SetPosition";
-    Topic.CoverStop  = Topic.Device + "/CoverStop";
-    Topic.CoverCalib = Topic.Device + "/CoverStartCalibration";
 
     Topic.dbg = Topic.Device + "/Debug/Dbg_";
 }
@@ -1044,7 +1053,7 @@ void setup() {
 
         // --------------------- Init MQTT Topics ---------------------
 
-        initMqttTopics( deviceName);
+        initMqttTopics();
 
         // --------------------- Init Network ---------------------
 

@@ -95,7 +95,7 @@ unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOW
 unsigned long coverTargetTime = 0; // Max time, when end position should be reached
 String coverDirection = "STOPPED";
 int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
-int coverPosition = 50;           // default value; real value from non-volatile memory
+int coverPosition = -1;           // default value; real value from non-volatile memory
 
 enum {
     NOT_CALIBRATED, 
