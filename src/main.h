@@ -60,8 +60,29 @@ int arrRssi[10][3] = {
 };
 
 // ------------------------ MQTT variables ------------------------
+String deviceName;
 
-String tdbg, topicMain, deviceName, topicFilter, topicDevice, topicResults, topicMessage, topicOnline, topicIp, topicConfig, topicRestart, topicHardReset, topicSwitch1, topicSwitch2, topicRelaySet1, topicRelaySet2, topicCoverTime, topicPosSet, topicCoverStop;
+struct TOPIC {
+    String dbg,
+    Main,
+    Filter,
+    Device,
+    Results,
+    Message,
+    Online,
+    Ip,
+    Config,
+    Restart,
+    HardReset,
+    Switch1,
+    Switch2,
+    RelaySet1,
+    RelaySet2,
+    PosSet,
+    CoverStop,
+    CoverCalib;
+    
+} Topic;
 
 // ------------------------ Shelly related variables ------------------------
 
@@ -74,7 +95,19 @@ unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOW
 unsigned long coverTargetTime = 0; // Max time, when end position should be reached
 String coverDirection = "STOPPED";
 int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
-int coverPosition = 100;           // default value; real value from non-volatile memory
+int coverPosition = 50;           // default value; real value from non-volatile memory
+
+enum {
+    NOT_CALIBRATED, 
+    UP_DEFAULT, 
+    CALIB_DOWN, 
+    CALIB_UP, 
+    CALIBRATED
+};
+
+int coverCalibState = NOT_CALIBRATED;
+
+bool stopCalib = false;
 
 
 //variables to keep track of the timing of recent changes from switches(=debounce)

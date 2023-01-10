@@ -61,7 +61,7 @@ bool pub(String topic, String payload, bool ignoreReceivings=false, uint8_t qos 
 
 void report( String msg, bool withPub=true){
     Serial.println( msg);
-    if ( withPub) pub( topicMessage, msg);
+    if ( withPub) pub( Topic.Message, msg);
 }
 
 void clearPreferences( const char* space="shelly"){
@@ -109,7 +109,13 @@ bool getRelayState ( int relay){
     else return true; // for security reasons
 }
 
-// --------------------- FUNKTIONEN SHELLY ---------------------
+/*
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+*/
 
 bool convertJsonToConfig( String& config, bool withPub=true){
 
@@ -208,7 +214,7 @@ bool convertJsonToConfig( String& config, bool withPub=true){
 
 void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLOSING, STOPPED
 
-    pub( topicMessage, cmd);
+    pub( Topic.Message, cmd);
 
     if ( cmd == "STOPPED"){
         // calc actual position and report/save
@@ -224,26 +230,26 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLO
         }
         coverDirection = "STOPPED";
         writeInt( "coverPosition", coverPosition);
-        pub( topicPosSet, String( coverPosition), true);
+        pub( Topic.PosSet, String( coverPosition), true);
 
     }
     else if ( cmd == "OPENING"){
         coverStartTime = millis();
         coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverTargetPosition - coverPosition) / 100 ;
         coverDirection = cmd; // enable time measurement in loop()
-        measEnergy = true;    // enable power measurement in loop()
+        if ( PinADE7953 != -1) measEnergy = true;    // enable power measurement in loop()
     }
     else if ( cmd == "CLOSING"){
         // activate loop statement and set time limit in loop observation
         coverStartTime = millis();
         coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverPosition - coverTargetPosition) / 100 ;
         coverDirection = cmd; // enable time measurement in loop()
-        measEnergy = true;    // enable power measurement in loop()
+        if ( PinADE7953 != -1) measEnergy = true;    // enable power measurement in loop()
     }
 
 }
 
-bool stopCover(){
+bool stopCover(){ // returns false if already stopped, otherwise true
 
     #ifdef DEBUG
         Serial.printf("Called stopCover(). Actual direction is: %s \n", coverDirection);
@@ -251,18 +257,24 @@ bool stopCover(){
 
     if ( coverDirection == "STOPPED") return false;
 
+    if ( coverCalibState > NOT_CALIBRATED && coverCalibState < CALIBRATED){
+        coverCalibState = NOT_CALIBRATED;
+        report( "Cover Calibration stopped ...");
+    }
+
     if ( coverDirection == "OPENING"){
         digitalWrite(PinRelay1, LOW);
         Serial.println( "COVER: Set Relay 1 to: false");
-        pub( topicRelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
+        pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
     }
     else if ( coverDirection == "CLOSING"){
         digitalWrite(PinRelay2, LOW);
         Serial.println( "COVER: Set Relay 2 to: false");
-        pub( topicRelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
+        pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
     }
-    measEnergy = false;    // disable power measurement in loop()
+    if ( PinADE7953 != -1) measEnergy = false;    // disable power measurement in loop()
     calcCoverPosition( "STOPPED");
+
     return true;
 }
 
@@ -288,9 +300,9 @@ void setRelayCover( byte relay, bool state, int coverTargetPosition=100){
             Serial.println( "COVER: Set Relay 1 to: true");
         }
         else {
-            pub( topicMessage, "End position already reached!");
+            pub( Topic.Message, "End position already reached!");
         }
-        pub( topicRelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
+        pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
     }
     else if ( relay == 2){// relay2 means always DOWN
         if ( coverPosition > 0){
@@ -299,15 +311,43 @@ void setRelayCover( byte relay, bool state, int coverTargetPosition=100){
             Serial.println( "COVER: Set Relay 2 to: true");
         }
         else {
-            pub( topicMessage, "End position already reached!");
+            pub( Topic.Message, "End position already reached!");
         }
-        pub( topicRelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
+        pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
     }
 }
 
 
 void coverCalibrateRoutine(){
-    measEnergy = true;
+    if ( PinADE7953 != -1) measEnergy = true;
+    else {
+        report( "Calibration not possible ADE7953 disabled!");
+        return;
+    }
+
+    switch( coverCalibState) {
+    case NOT_CALIBRATED:
+        // code block
+
+        coverCalibState = UP_DEFAULT;
+        break;
+    case UP_DEFAULT:
+        // code block
+
+        coverCalibState = CALIB_DOWN;
+        break;
+    case CALIB_DOWN:
+        // code block
+
+        coverCalibState = CALIB_UP;
+        break;
+    case CALIB_UP:
+        // code block
+
+        coverCalibState = CALIBRATED;
+        break;
+    }
+
 }
 
 
@@ -316,18 +356,18 @@ void setRelayLight( byte relay, bool state){
 
     if ( getRelayState ( relay) == state) return; // Do nothing if relay is in desired state
 
-    measEnergy = state; // enable/disable power measurement in loop()
+    if ( PinADE7953 != -1) measEnergy = state; // enable/disable power measurement in loop()
     if ( relay == 1){
         digitalWrite(PinRelay1, state);
         Serial.println( "LIGHT: Set Relay 1 to: " + boolToString( state) );
         delay(100);
-        pub( topicRelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
+        pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
     }
     else if ( relay == 2){
         digitalWrite(PinRelay2, state);
         Serial.println( "LIGHT: Set Relay 2 to: " + boolToString( state) );
         delay(100);
-        pub( topicRelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
+        pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
     }
 }
 void toggleRelay( byte relay){
@@ -336,15 +376,15 @@ void toggleRelay( byte relay){
         digitalWrite(PinRelay1, !digitalRead(PinRelay1) );
         Serial.println( "Toggle Relay 1");
         state = digitalRead( PinRelay1) == HIGH;
-        measEnergy = state; // enable/disable power measurement in loop()
-        pub( topicRelaySet1, state ? "true" : "false" , true);
+        if ( PinADE7953 != -1) measEnergy = state; // enable/disable power measurement in loop()
+        pub( Topic.RelaySet1, state ? "true" : "false" , true);
     }
     else if ( relay == 2){
         digitalWrite(PinRelay2, !digitalRead(PinRelay2) );
         Serial.println( "Toggle Relay 2");
         state = digitalRead( PinRelay2) == HIGH;
-        measEnergy = state; // enable/disable power measurement in loop()
-        pub( topicRelaySet2, state ? "true" : "false" , true);
+        if ( PinADE7953 != -1) measEnergy = state; // enable/disable power measurement in loop()
+        pub( Topic.RelaySet2, state ? "true" : "false" , true);
     }
 }
 
@@ -353,8 +393,9 @@ void loopCheckSw1() {
     switchTime1 = millis();
     switchState1 = digitalRead( PinSwitch1) == HIGH;
     if ( switchTime1 - switchLastTime1 > debounce && switchState1 != switchLastState1 ){
+        // Switch change detected ...
         Serial.println( "Switch1 changed to state: " + boolToString( switchState1) );
-        pub( topicSwitch1, boolToString( switchState1) );
+        pub( Topic.Switch1, boolToString( switchState1) );
         switchLastTime1 = switchTime1;
         switchLastState1 = switchState1;
         if ( devMode == "LIGHT"){
@@ -381,8 +422,9 @@ void loopCheckSw2() {
     switchTime2 = millis();
     switchState2 = digitalRead( PinSwitch2) == HIGH;
     if ( switchTime2 - switchLastTime2 > debounce && switchState2 != switchLastState2 ){
+        // Switch change detected ...
         Serial.println( "Switch2 changed to state: " + boolToString( switchState2) );
-        pub( topicSwitch2, boolToString( switchState2) );
+        pub( Topic.Switch2, boolToString( switchState2) );
         switchLastTime2 = switchTime2;
         switchLastState2 = switchState2;
         if ( devMode == "LIGHT"){
@@ -410,6 +452,7 @@ void loopCheckSwR() {
     switchTimeR = millis();
     switchStateR = digitalRead( PinSwitchR) == HIGH;
     if ( switchTimeR - switchLastTimeR > debounce && switchStateR != switchLastStateR ){
+        // Switch change detected ...
         Serial.println( "SwitchR changed to state: " + boolToString( switchStateR) );
         switchLastTimeR = switchTimeR;
         switchLastStateR = switchStateR;
@@ -435,31 +478,24 @@ void loopCheckSwR() {
 
 bool MqttCommandShelly(String& topic, String& pay) {
 
-    if (topic == topicRelaySet1) {
+    if (topic == Topic.RelaySet1) {
         if ( devMode == "LIGHT") setRelayLight( 1, stringToBool( pay) );
         else setRelayCover( 1, stringToBool( pay), 100);
         
     }
-    else if (topic == topicRelaySet2) {
+    else if (topic == Topic.RelaySet2) {
         if ( devMode == "LIGHT") setRelayLight( 2, stringToBool( pay) );
         else setRelayCover( 2, stringToBool( pay), 0);
     }
-    else if (topic == topicCoverTime) {
-        int tmp = pay.toInt();
-        if ( tmp <= 0){
-            report( "ERROR: Non valid MaxCoverTime received over MQTT!");
+    else if (topic == Topic.PosSet) {
+        if ( coverCalibState < CALIBRATED){
+            report( "ERROR: Cover not calibrated!");
+            return true;
         }
-        else{
-            writeInt( "coverMaxTime", tmp);
-            coverMaxTime = tmp;
-            report( "MaxCoverTime saved in memory!");
-        }
-    }
-    else if (topic == topicPosSet) {
         int setPosition = pay.toInt();
         if ( setPosition < 0 || setPosition > 100){
             report( "ERROR: Non valid Position received over MQTT!");
-            pub( topicPosSet, String( coverPosition) , true);
+            pub( Topic.PosSet, String( coverPosition) , true);
         }
         else {
             stopCover();
@@ -467,13 +503,13 @@ bool MqttCommandShelly(String& topic, String& pay) {
             else if ( setPosition < coverPosition) setRelayCover( 2, true, setPosition);
         }
     }
-    else if (topic == topicCoverStop) {
+    else if (topic == Topic.CoverStop) {
         if ( pay == "true"){
             stopCover();
-            pub( topicCoverStop, "false", true);
+            pub( Topic.CoverStop, "false", true);
         }
     }
-    else if (topic == topicConfig) {
+    else if (topic == Topic.Config) {
         bool convertOk = convertJsonToConfig( pay);
         if ( convertOk){
             writeString( "config", pay);
@@ -482,7 +518,18 @@ bool MqttCommandShelly(String& topic, String& pay) {
             restartDevice();
         }
         else {
-            pub( topicConfig, config, true);
+            pub( Topic.Config, config, true);
+        }
+    }
+    else if (topic == Topic.CoverCalib) {
+        if ( pay == "true"){
+            stopCover();
+            report( "Cover Calibration starting ...");
+            coverCalibrateRoutine();
+        }
+        else {
+            stopCover();
+            if ( coverCalibState > NOT_CALIBRATED && coverCalibState < CALIBRATED) report( "Cover Calibration stopped ...");
         }
     }
     else
@@ -494,29 +541,29 @@ bool MqttCommandShelly(String& topic, String& pay) {
 
 void pubsubShelly() {
 
-    pub( topicConfig, config, true);
-    mqttClient.subscribe(topicConfig.c_str(), 1);
+    pub( Topic.Config, config, true);
+    mqttClient.subscribe(Topic.Config.c_str(), 1);
 
-    pub( topicSwitch1, ( digitalRead( PinSwitch1) == HIGH) ? "true" : "false" );
-    pub( topicRelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
-    mqttClient.subscribe(topicRelaySet1.c_str(), 1);
+    pub( Topic.Switch1, ( digitalRead( PinSwitch1) == HIGH) ? "true" : "false" );
+    pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
+    mqttClient.subscribe(Topic.RelaySet1.c_str(), 1);
 
     if ( PinSwitch2 != -1 && PinRelay2 != -1 ){
-        pub( topicSwitch2, ( digitalRead( PinSwitch2) == HIGH) ? "true" : "false" );
-        pub( topicRelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
-        mqttClient.subscribe(topicRelaySet2.c_str(), 1);
+        pub( Topic.Switch2, ( digitalRead( PinSwitch2) == HIGH) ? "true" : "false" );
+        pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
+        mqttClient.subscribe(Topic.RelaySet2.c_str(), 1);
     }
 
     if ( devMode == "COVER"){
 
-        pub( topicCoverTime, String( coverMaxTime) , true);
-        mqttClient.subscribe(topicCoverTime.c_str(), 1);
+        pub( Topic.PosSet, String( coverPosition) , true);
+        mqttClient.subscribe(Topic.PosSet.c_str(), 1);
 
-        pub( topicPosSet, String( coverPosition) , true);
-        mqttClient.subscribe(topicPosSet.c_str(), 1);
+        pub( Topic.CoverStop, "false", true);
+        mqttClient.subscribe(Topic.CoverStop.c_str(), 1);
 
-        pub( topicCoverStop, "false", true);
-        mqttClient.subscribe(topicCoverStop.c_str(), 1);
+        pub( Topic.CoverCalib, "false", true);
+        mqttClient.subscribe(Topic.CoverCalib.c_str(), 1);
     }
 }
 
@@ -529,11 +576,17 @@ void SetupShelly() {
     config = readString( "config", config);
     convertJsonToConfig( config);
 
-    // --------------------- Read values from non-volatile memory ---------------------
+    // --------------------- Read values from non-volatile memory if necessary---------------------
 
     if ( devMode == "COVER"){
+        coverCalibState = readInt( "coverCalibState", coverCalibState);
         coverMaxTime = readInt( "coverMaxTime", coverMaxTime);
         coverPosition = readInt( "coverPosition", coverPosition);
+
+        if ( coverCalibState < CALIBRATED){
+            coverPosition = -1;
+            writeInt( "coverPosition", coverPosition);
+        }
     }
 
     // --------------------- Modify topics for COVER mode ---------------------
@@ -541,8 +594,8 @@ void SetupShelly() {
     if ( PinRelay2 == -1 || PinSwitch2 == -1) devMode == "LIGHT"; // Force LIGHT Mode if 2nd Input or Output disabled
 
     if ( devMode == "COVER"){
-        topicRelaySet1  = topicDevice + "/CoverUp";
-        topicRelaySet2  = topicDevice + "/CoverDown";
+        Topic.RelaySet1  = Topic.Device + "/CoverUp";
+        Topic.RelaySet2  = Topic.Device + "/CoverDown";
     }
 
     // --------------------- Set measurement interval for ADE7953 ---------------------
@@ -573,7 +626,7 @@ void SetupShelly() {
 
     // --------------------- Init ADE7953 ---------------------
 
-    myADE7953.initialize( PinSCL, PinSDA);
+    if ( PinADE7953 != -1) myADE7953.initialize( PinSCL, PinSDA);
 
 }
 
@@ -593,17 +646,21 @@ void LoopShelly() {
         Energy = myADE7953.getData();
 
         #ifdef DEBUG
-            pub( tdbg+"voltage0", String( Energy.voltage[0] ) );
-            pub( tdbg+"current0", String( Energy.current[0] ) );
-            pub( tdbg+"power0",   String( Energy.power[0]   ) );
-            pub( tdbg+"voltage1", String( Energy.voltage[1] ) );
-            pub( tdbg+"current1", String( Energy.current[1] ) );
-            pub( tdbg+"power1",   String( Energy.power[1]   ) );
+            pub( Topic.dbg+"voltage0", String( Energy.voltage[0] ) );
+            pub( Topic.dbg+"current0", String( Energy.current[0] ) );
+            pub( Topic.dbg+"power0",   String( Energy.power[0]   ) );
+            pub( Topic.dbg+"voltage1", String( Energy.voltage[1] ) );
+            pub( Topic.dbg+"current1", String( Energy.current[1] ) );
+            pub( Topic.dbg+"power1",   String( Energy.power[1]   ) );
 
-            pub( tdbg+"powerAcc", String( Energy.powerAcc  ) );
+            pub( Topic.dbg+"powerAcc", String( Energy.powerAcc  ) );
         #endif
 
         slowLoop = millis();
+
+        // --------------------- If calibration routine started and not finished, call routine ---------------------
+
+        if ( coverCalibState > NOT_CALIBRATED && coverCalibState < CALIBRATED) coverCalibrateRoutine();
     }
 
     // --------------------- Time measurement for cover mode  ---------------------
@@ -624,20 +681,26 @@ void LoopShelly() {
 
 }
 
-// --------------------- FUNKTIONEN ---------------------
+/*
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+*/
 
 void pubsubMain() {
 
-    pub( topicOnline, "true");
-    pub( topicIp, WiFi.localIP().toString() );
-    pub( topicRestart, "false", true);
-    pub( topicHardReset, "false", true);
-    pub( topicMessage, "Ready");
-    pub( topicFilter, filterBle, true);
+    pub( Topic.Online, "true");
+    pub( Topic.Ip, WiFi.localIP().toString() );
+    pub( Topic.Restart, "false", true);
+    pub( Topic.HardReset, "false", true);
+    pub( Topic.Message, "Ready");
+    pub( Topic.Filter, filterBle, true);
     delay(100);
-    mqttClient.subscribe( topicRestart.c_str(), 1);
-    mqttClient.subscribe( topicHardReset.c_str(), 1);
-    mqttClient.subscribe( topicFilter.c_str(), 1);
+    mqttClient.subscribe( Topic.Restart.c_str(), 1);
+    mqttClient.subscribe( Topic.HardReset.c_str(), 1);
+    mqttClient.subscribe( Topic.Filter.c_str(), 1);
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
@@ -657,17 +720,17 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
         return;
     }
 
-    if (top == topicRestart && pay == "true"){
+    if (top == Topic.Restart && pay == "true"){
         restartDevice();
     }
-    else if (top == topicHardReset && pay == "true"){
-        pub( topicHardReset, "false", true);
+    else if (top == Topic.HardReset && pay == "true"){
+        pub( Topic.HardReset, "false", true);
         clearPreferences();
         delay(2500);
         restartDevice();
     }
-    else if (top == topicFilter){
-        pub( topicFilter, pay, true);
+    else if (top == Topic.Filter){
+        pub( Topic.Filter, pay, true);
         report( "New filter activated");
         filterBle = pay;
         writeString( "filterBle", filterBle);
@@ -693,8 +756,8 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
         if ( ind >= 0){
             int pos = ind/18;
             push( arrRssi[pos], rssi);
-            pub( topicResults + "/" + address + "/" + deviceName, String( median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] ) ) );
-            //pub( topicResults + "/" + address + "/" + deviceName, String( rssi) );
+            pub( Topic.Results + "/" + address + "/" + deviceName, String( median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] ) ) );
+            //pub( Topic.Results + "/" + address + "/" + deviceName, String( rssi) );
         }
 
     }
@@ -910,7 +973,7 @@ void initNetwork(){
 	mqttClient.onConnect( onMqttConnect);
     mqttClient.onMessage( onMqttMessage);
     mqttClient.setServer( mqttServer.c_str(), mqttPort);
-    mqttClient.setWill( topicOnline.c_str(), 1, true, "false");
+    mqttClient.setWill( Topic.Online.c_str(), 1, true, "false");
     mqttClient.connect();
     timeout = 0;
     while ( !mqttClient.connected() ){
@@ -940,28 +1003,28 @@ void initNetwork(){
 void initMqttTopics( String deviceName){
 
     // global definde in main.h
-    topicMain    = "shellyscanner"; // mqtt main topic
-    topicDevice  = topicMain + "/devices/" + deviceName;
-    topicResults = topicMain + "/results";
+    Topic.Main    = "shellyscanner"; // mqtt main topic
+    Topic.Device  = Topic.Main + "/devices/" + deviceName;
+    Topic.Results = Topic.Main + "/results";
 
-    topicMessage    = topicDevice + "/Message";
-    topicOnline     = topicDevice + "/Online";
-    topicIp         = topicDevice + "/IP_Address";
-    topicConfig     = topicDevice + "/Config";
-    topicRestart    = topicDevice + "/Restart";
-    topicHardReset  = topicDevice + "/HardReset";
-    topicFilter     = topicDevice + "/Filter";
+    Topic.Message    = Topic.Device + "/Message";
+    Topic.Online     = Topic.Device + "/Online";
+    Topic.Ip         = Topic.Device + "/IP_Address";
+    Topic.Config     = Topic.Device + "/Config";
+    Topic.Restart    = Topic.Device + "/Restart";
+    Topic.HardReset  = Topic.Device + "/HardReset";
+    Topic.Filter     = Topic.Device + "/Filter";
 
-    topicSwitch1    = topicDevice + "/Switch1";
-    topicSwitch2    = topicDevice + "/Switch2";
-    topicRelaySet1  = topicDevice + "/SetRelay1"; // Will be changed in case of COVER
-    topicRelaySet2  = topicDevice + "/SetRelay2"; // Will be changed in case of COVER
+    Topic.Switch1    = Topic.Device + "/Switch1";
+    Topic.Switch2    = Topic.Device + "/Switch2";
+    Topic.RelaySet1  = Topic.Device + "/SetRelay1"; // Will be changed in case of COVER
+    Topic.RelaySet2  = Topic.Device + "/SetRelay2"; // Will be changed in case of COVER
 
-    topicCoverTime  = topicDevice + "/SetMaxCoverTime";
-    topicPosSet     = topicDevice + "/SetPosition";
-    topicCoverStop  = topicDevice + "/CoverStop";
+    Topic.PosSet     = Topic.Device + "/SetPosition";
+    Topic.CoverStop  = Topic.Device + "/CoverStop";
+    Topic.CoverCalib = Topic.Device + "/CoverStartCalibration";
 
-    tdbg = topicDevice + "/Debug/Dbg_";
+    Topic.dbg = Topic.Device + "/Debug/Dbg_";
 }
 
 void setup() {
