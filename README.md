@@ -147,8 +147,8 @@ Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Pl
 
 ```
 {  
-"Config": "Shelly Plus 1PM v0.1.9",
-"ButtonReset": 27,
+"Config": "Shelly Plus 1(PM) v0.1.9",
+"ButtonReset": 25,
 "Switch1": 4,
 "Switch1_Mode": "Switch",
 "Switch2": -1,
