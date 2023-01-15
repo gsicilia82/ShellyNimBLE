@@ -46,6 +46,9 @@ bool stringToBool(String s){ return ( s == "true") ? true : false; }
 bool pub(String topic, String payload, bool ignoreReceivings=false, uint8_t qos = 0, bool retain = false, size_t length = 0, bool dup = false, uint16_t message_id = 0){
 
     if ( ignoreReceivings) {
+        #ifdef DEBUG
+            Serial.println("MQTT Starttime for Ignoring caused by topic: " + topic);
+        #endif
         mqttDisableTime = millis();
         mqttDisabled = true;
     }
@@ -107,6 +110,29 @@ bool getRelayState ( int relay){
     if      ( relay == 1) return ( ( digitalRead( PinRelay1) == HIGH) ? true : false );
     else if ( relay == 2) return ( ( digitalRead( PinRelay2) == HIGH) ? true : false );
     else return true; // for security reasons
+}
+
+/*
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+###############################################################################################################################
+*/
+
+ENERGY getFakePower(){
+
+    ENERGY Fake;
+
+    if ( coverDirection != "STOPPED"){
+        
+        float pwr = (millis() - coverStartTime)/100;
+        if ( pwr > 200) pwr = 0;
+        Fake.powerAcc = pwr;
+    }
+    else Fake.powerAcc = 0;
+
+    return Fake;
 }
 
 /*
@@ -214,7 +240,11 @@ bool convertJsonToConfig( String& config, bool withPub=true){
 
 void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLOSING, STOPPED
 
-    pub( Topic.Message, cmd);
+    #ifdef DEBUG
+        Serial.printf("Called calcCoverPosition() with: cmd=%s, coverTargetPosition=%d \n", cmd, coverTargetPosition);
+    #endif
+
+    pub( Topic.CoverState, cmd);
 
     if ( cmd == "STOPPED"){
         // calc actual position and report/save
@@ -229,11 +259,12 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLO
             coverPosition = coverPosition < 0 ? 0 : coverPosition;
         }
         else{
-            coverPosition = -1;
+            coverPosition = 50;
         }
-        coverDirection = "STOPPED";
+        coverDirection = cmd;
         writeInt( "coverPosition", coverPosition);
-        pub( Topic.PosSet, String( coverPosition), true);
+        pub( Topic.CoverPosSet, String( coverPosition), true);
+        if ( PinADE7953 != -1) measEnergy = false;    // disable power measurement in loop()
 
     }
     else if ( cmd == "OPENING"){
@@ -263,6 +294,7 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLO
 
 }
 
+
 bool stopCover(){ // returns false if already stopped, otherwise true
 
     #ifdef DEBUG
@@ -270,11 +302,6 @@ bool stopCover(){ // returns false if already stopped, otherwise true
     #endif
 
     if ( coverDirection == "STOPPED") return false;
-
-    if ( coverCalibState > NOT_CALIBRATED && coverCalibState < CALIBRATED){
-        coverCalibState = NOT_CALIBRATED;
-        report( "Cover Calibration stopped ...");
-    }
 
     if ( coverDirection == "OPENING"){
         digitalWrite(PinRelay1, LOW);
@@ -301,9 +328,9 @@ void setRelayCover( byte relay, bool state, int coverTargetPosition=100){
 
     if ( getRelayState ( relay) == state) return; // Do nothing if relay is in desired state
  
-    bool waitAfterSwitch = stopCover();
+    bool waitAfterSwitch = stopCover(); // If cover was stopped, returns true and wait in next steps
 
-    if ( !state) return;
+    if ( !state) return; // false = stopped, was already done in step before
 
     if ( waitAfterSwitch) delay(1000);
 
@@ -331,35 +358,106 @@ void setRelayCover( byte relay, bool state, int coverTargetPosition=100){
     }
 }
 
+bool isCalibRunning() { return ( coverCalibState > NOT_CALIBRATED && coverCalibState < CALIBRATED); }
+
+void stopCalibration( String msg=""){
+    if ( isCalibRunning() ){
+        coverCalibState = NOT_CALIBRATED;
+        report( "Cover Calibration stopped. " + msg);
+        stopCover();
+    }
+}
 
 void coverCalibrateRoutine(){
-    if ( PinADE7953 != -1) measEnergy = true;
-    else {
-        report( "Calibration not possible with disabled ADE7953!");
-        return;
-    }
+
+    int limPowHigh = 15;
+    int limPowLow = 1;
+    unsigned long calibTimeout = 100000; // Timeout to reach end positions in ms
 
     switch( coverCalibState) {
-    case NOT_CALIBRATED:
-        // code block
-
-        coverCalibState = UP_DEFAULT;
-        break;
-    case UP_DEFAULT:
-        // code block
-
-        coverCalibState = CALIB_DOWN;
-        break;
-    case CALIB_DOWN:
-        // code block
-
-        coverCalibState = CALIB_UP;
-        break;
-    case CALIB_UP:
-        // code block
-
-        coverCalibState = CALIBRATED;
-        break;
+        case NOT_CALIBRATED:
+            report("Raise cover up to end position...");
+            setRelayCover( 1, true, 100);
+            calibStepTimer = millis();
+            delay(2000);
+            coverCalibState = RAISE_1ST_CHKPWR_0W;
+            break;
+        case RAISE_1ST_CHKPWR_0W:
+            if ( Energy.powerAcc < limPowLow){
+                report("Up Position reached!");
+                coverCalibState = UP_REACHED_1ST;
+            }
+            else if ( millis() - calibStepTimer > calibTimeout){
+                stopCalibration( "Calibration routine stopped by Timeout!");
+                break;
+            }
+            else break;
+        case UP_REACHED_1ST:
+            report("Lower cover down to end position measuring the time...");
+            setRelayCover( 2, true, 0);
+            calibTimer1 = calibStepTimer = millis();
+            coverCalibState = LOWER;
+        case LOWER:
+            report("Verify power measurement in 2s...");
+            delay(2000);
+            coverCalibState = LOWER_CHKPWR_20W;
+            break;
+        case LOWER_CHKPWR_20W:
+            if ( Energy.powerAcc > limPowHigh){
+                report("Power measurement verified!");
+                coverCalibState = LOWER_CHKPWR_0W;
+            }
+            else {
+                stopCalibration( "Power measurement not ok. Aborting calibration routine!");
+                break;
+            }
+        case LOWER_CHKPWR_0W:
+            if ( Energy.powerAcc < limPowLow){
+                calibTimer1 = millis() - calibTimer1;
+                float tmp = calibTimer1 / 1000;
+                report("Down Position reached after [s]: " + String( tmp) );
+                coverCalibState = DOWN_REACHED;
+            }
+            else if ( millis() - calibStepTimer > calibTimeout){
+                stopCalibration( "Calibration routine stopped by Timeout!");
+                break;
+            }
+            else break;
+        case DOWN_REACHED:
+            report("Raise cover up to end position measuring the time...");
+            setRelayCover( 1, true, 100);
+            calibTimer2 = calibStepTimer = millis();
+            coverCalibState = RAISE_2ND;
+        case RAISE_2ND:
+            report("Verify power measurement in 2s...");
+            delay(2000);
+            coverCalibState = RAISE_2ND_CHKPWR_20W;
+            break;
+        case RAISE_2ND_CHKPWR_20W:
+            if ( Energy.powerAcc > limPowHigh){
+                report("Power measurement verified!");
+                coverCalibState = RAISE_2ND_CHKPWR_0W;
+            }
+            else {
+                stopCalibration( "Power measurement not ok. Aborting calibration routine!");
+                break;
+            }
+        case RAISE_2ND_CHKPWR_0W:
+            if ( Energy.powerAcc < limPowLow){
+                calibTimer2 = millis() - calibTimer2;
+                float tmp = calibTimer2 / 1000;
+                report("UP Position reached after [s]: " + String( tmp) );
+                coverCalibState = UP_REACHED_2ND;
+            }
+            else if ( millis() - calibStepTimer > calibTimeout){
+                stopCalibration( "Calibration routine stopped by Timeout!");
+                break;
+            }
+            else break;
+        case UP_REACHED_2ND:
+            report("Calibration Done! Timer2 - Timer1 = " + String(calibTimer2 - calibTimer1) );
+            coverCalibState = CALIBRATED;
+            break;
     }
 
 }
@@ -417,6 +515,7 @@ void loopCheckSw1() {
         pub( Topic.Switch1, boolToString( switchState1) );
         switchLastTime1 = switchTime1;
         switchLastState1 = switchState1;
+        stopCalibration( "Calibration routine stopped by Switch 1!");
         if ( devMode == "LIGHT"){
             if ( switchMode1 == "BUTTON" && switchState1){
                 toggleRelay( 1);
@@ -446,6 +545,7 @@ void loopCheckSw2() {
         pub( Topic.Switch2, boolToString( switchState2) );
         switchLastTime2 = switchTime2;
         switchLastState2 = switchState2;
+        stopCalibration( "Calibration routine stopped by Switch 2!");
         if ( devMode == "LIGHT"){
             if ( switchMode2 == "BUTTON" && switchState2){
                 toggleRelay( 2);
@@ -483,9 +583,11 @@ void loopCheckSwR() {
             Serial.print( "Reset pressed for [s]: ");
             Serial.println( switchTimeLongPressR);
             if ( switchTimeLongPressR > 200 && switchTimeLongPressR < 10000){
+                stopCalibration( "Calibration routine stopped by Reset button!");
                 restartDevice();
             }
             else if ( switchTimeLongPressR > 10000){
+                stopCalibration( "Calibration routine stopped by Reset button!");
                 clearPreferences();
                 delay(5000);
                 restartDevice();
@@ -497,24 +599,26 @@ void loopCheckSwR() {
 
 bool MqttCommandShelly(String& topic, String& pay) {
 
+    stopCalibration( "Calibration routine stopped over MQTT!");
+
     if (topic == Topic.RelaySet1) {
         if ( devMode == "LIGHT") setRelayLight( 1, stringToBool( pay) );
-        else setRelayCover( 1, stringToBool( pay), 100);
-        
+        else setRelayCover( 1, stringToBool( pay), ( pay=="true" ? 100 : -1) );
     }
     else if (topic == Topic.RelaySet2) {
         if ( devMode == "LIGHT") setRelayLight( 2, stringToBool( pay) );
-        else setRelayCover( 2, stringToBool( pay), 0);
+        else setRelayCover( 2, stringToBool( pay), ( pay=="true" ? 0 : -1) );
     }
-    else if (topic == Topic.PosSet) {
+    else if (topic == Topic.CoverPosSet) {
         if ( coverCalibState < CALIBRATED){
             report( "ERROR: Cover not calibrated!");
+            pub( Topic.CoverPosSet, "50", true);
             return true;
         }
         int setPosition = pay.toInt();
         if ( setPosition < 0 || setPosition > 100){
             report( "ERROR: Non valid Position received over MQTT!");
-            pub( Topic.PosSet, String( coverPosition) , true);
+            pub( Topic.CoverPosSet, String( coverPosition) , true);
         }
         else {
             stopCover();
@@ -543,12 +647,21 @@ bool MqttCommandShelly(String& topic, String& pay) {
     else if (topic == Topic.CoverCalib) {
         if ( pay == "true"){
             stopCover();
-            report( "Cover Calibration starting ...");
-            coverCalibrateRoutine();
+            if ( PinADE7953 != -1){
+                measEnergy = true;
+                // Stop Scanprocess
+                //scanAutostart = false;
+                //pBLEScan->stop();
+                //
+                report( "Cover Calibration started!");
+                coverCalibrateRoutine();
+            }
+            else {
+                report( "Calibration not possible with disabled ADE7953!");
+            }
         }
         else {
-            stopCover();
-            if ( coverCalibState > NOT_CALIBRATED && coverCalibState < CALIBRATED) report( "Cover Calibration stopped ...");
+            stopCalibration( "Calibration routine stopped over MQTT!");
         }
     }
     else
@@ -560,14 +673,15 @@ bool MqttCommandShelly(String& topic, String& pay) {
 
 void initMqttTopicsShelly(){
 
-    Topic.Switch1    = Topic.Device + "/Switch1";
-    Topic.Switch2    = Topic.Device + "/Switch2";
-    Topic.RelaySet1  = Topic.Device + "/SetRelay1"; // Will be changed in case of COVER
-    Topic.RelaySet2  = Topic.Device + "/SetRelay2"; // Will be changed in case of COVER
+    Topic.Switch1     = Topic.Device + "/Switch1";
+    Topic.Switch2     = Topic.Device + "/Switch2";
+    Topic.RelaySet1   = Topic.Device + "/SetRelay1"; // Will be changed in case of COVER
+    Topic.RelaySet2   = Topic.Device + "/SetRelay2"; // Will be changed in case of COVER
 
-    Topic.PosSet     = Topic.Device + "/SetPosition";
-    Topic.CoverStop  = Topic.Device + "/CoverStop";
-    Topic.CoverCalib = Topic.Device + "/CoverStartCalibration";
+    Topic.CoverPosSet = Topic.Device + "/CoverSetPosition";
+    Topic.CoverStop   = Topic.Device + "/CoverStop";
+    Topic.CoverCalib  = Topic.Device + "/CoverStartCalibration";
+    Topic.CoverState  = Topic.Device + "/CoverState";
 }
 
 
@@ -588,14 +702,16 @@ void pubsubShelly() {
 
     if ( devMode == "COVER"){
 
-        pub( Topic.PosSet, String( coverPosition) , true);
-        mqttClient.subscribe(Topic.PosSet.c_str(), 1);
+        pub( Topic.CoverPosSet, String( coverPosition) , true);
+        mqttClient.subscribe(Topic.CoverPosSet.c_str(), 1);
 
         pub( Topic.CoverStop, "false", true);
         mqttClient.subscribe(Topic.CoverStop.c_str(), 1);
 
         pub( Topic.CoverCalib, "false", true);
         mqttClient.subscribe(Topic.CoverCalib.c_str(), 1);
+
+        pub( Topic.CoverState, "STOPPED");
     }
 }
 
@@ -616,7 +732,7 @@ void SetupShelly() {
         coverPosition = readInt( "coverPosition", coverPosition);
 
         if ( coverCalibState < CALIBRATED){
-            coverPosition = -1;
+            coverPosition = 50;
             writeInt( "coverPosition", coverPosition);
         }
     }
@@ -667,7 +783,7 @@ void SetupShelly() {
 }
 
 
-long slowLoop = millis();
+
 void LoopShelly() {
 
     // --------------------- Check switch entries ---------------------
@@ -678,9 +794,12 @@ void LoopShelly() {
 
     // --------------------- Read values from ADE7953 ---------------------
 
-    if ( measEnergy && millis() - slowLoop > measIntervall){ // Intervall = 100 if COVER else 5000
+    static unsigned long lastSlowLoop = 0;
+    if ( measEnergy && millis() - lastSlowLoop > measIntervall){ // Intervall = 100 if COVER else 5000
         
-        Energy = myADE7953.getData();
+        //Energy = myADE7953.getData();
+        Energy = getFakePower();
+
 
         #ifdef DEBUG
             pub( Topic.dbg+"voltage0", String( Energy.voltage[0] ) );
@@ -693,11 +812,11 @@ void LoopShelly() {
             pub( Topic.dbg+"powerAcc", String( Energy.powerAcc  ) );
         #endif
 
-        slowLoop = millis();
+        lastSlowLoop = millis();
 
         // --------------------- If calibration routine running callback routine ---------------------
 
-        if ( coverCalibState > NOT_CALIBRATED && coverCalibState < CALIBRATED) coverCalibrateRoutine();
+        if ( isCalibRunning() ) coverCalibrateRoutine();
     }
 
     // --------------------- Stop cover if target time is reached ---------------------
@@ -1088,15 +1207,9 @@ void setup() {
 
         // --------------------- SCANNER ---------------------
 
-        filterBle = readString( "filterBle", filterBle); // read filter from memory, default value from main.h
-
         NimBLEDevice::init("");
 
-        //NimBLEDevice::whiteListAdd(a); //#
-
         pBLEScan = NimBLEDevice::getScan();
-
-        //pBLEScan->setFilterPolicy(BLE_HCI_SCAN_FILT_USE_WL); //#
 
         pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks(), true);
         pBLEScan->setMaxResults(0); // do not store the scan results, use callback only.
@@ -1159,7 +1272,7 @@ void loop() {
 
         // --------------------- BLE Scanner Autostart ---------------------
 
-        if ( pBLEScan->isScanning() == false) {
+        if ( pBLEScan->isScanning() == false && scanAutostart) {
             // Start scan with: duration = 0 seconds(forever), no scan end callback, not a continuation of a previous scan.
             pBLEScan->start(0, nullptr, false);
         }
@@ -1174,12 +1287,19 @@ void loop() {
 
         // --------------------- Disable MQTT handler temporary ---------------------
 
-        if ( mqttDisabled && ( millis() - mqttDisableTime > 100) ){
+        if ( mqttDisabled && ( millis() - mqttDisableTime > 500) ){
             mqttDisabled = false;
             #ifdef DEBUG
                 Serial.println("MQTT commandhandler enabled again!");
             #endif
         }
+
+        static unsigned long lastSlowLoop = 0;
+            if (millis() - lastSlowLoop > 5000) {
+                lastSlowLoop = millis();
+                auto freeHeap = ESP.getFreeHeap();
+                if (freeHeap < 20000) Serial.printf("Low memory: %u bytes free\n", freeHeap);
+            }
 
     }
 

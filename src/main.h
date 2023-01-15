@@ -78,42 +78,42 @@ struct TOPIC {
     Switch2,
     RelaySet1,
     RelaySet2,
-    PosSet,
+    CoverState,
+    CoverPosSet,
     CoverStop,
     CoverCalib;
     
 } Topic;
 
+// ##########################################################################
+// ------------------------ Device related variables ------------------------
+// ##########################################################################
+
+bool wifiWasConnected = false;
+bool captivePortalActivated = false;
+
+// helper to temp. ignore arriving MQTT mesages
+unsigned long mqttDisableTime = 0;
+bool mqttDisabled = false;
+
+bool scanAutostart = true;
+
+// ##########################################################################
 // ------------------------ Shelly related variables ------------------------
+// ##########################################################################
 
 StaticJsonDocument<400> doc; // Needed for JSON config over mqtt
 
 uint debounce = 100; // debounce switch input in ms
 
-// Needed only in COVER mode
-unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOWN
-unsigned long coverTargetTime = 0; // Max time, when end position should be reached
-String coverDirection = "STOPPED";
-int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
-int coverPosition = -1;           // default value; real value from non-volatile memory
-
-enum {
-    NOT_CALIBRATED, 
-    UP_DEFAULT, 
-    CALIB_DOWN, 
-    CALIB_UP, 
-    CALIBRATED
-};
-
-int coverCalibState = NOT_CALIBRATED;
-
-bool stopCalib = false;
-
+bool measEnergy = false;
+int measIntervall = 100;
 
 //variables to keep track of the timing of recent changes from switches(=debounce)
 unsigned long switchTime1 = 0;
 unsigned long switchLastTime1 = 0;
 bool switchState1, switchLastState1;
+
 unsigned long switchTime2 = 0;
 unsigned long switchLastTime2 = 0;
 bool switchState2, switchLastState2;
@@ -129,14 +129,36 @@ int PinSwitchR, PinSwitch1, PinSwitch2, PinRelay1, PinRelay2, PinSCL, PinSDA, Pi
 
 String switchMode1, switchMode2; // possible switchMode: BUTTON or SWITCH or DETACHED
 
-// ------------------------ Device related variables ------------------------
 
-bool wifiWasConnected = false;
-bool captivePortalActivated = false;
+// ##########################
+// Needed only in COVER mode
+// ##########################
 
-// helper to temp. ignore arriving MQTT mesages
-unsigned long mqttDisableTime = 0;
-bool mqttDisabled = false;
+unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOWN
+unsigned long coverTargetTime = 0; // Max time, when end position should be reached
+String coverDirection = "STOPPED";
+int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
+int coverPosition = 50;           // default value; real value from non-volatile memory
 
-bool measEnergy = false;
-int measIntervall = 100;
+enum {
+    NOT_CALIBRATED,
+    RAISE_1ST_CHKPWR_0W,
+    UP_REACHED_1ST,
+    LOWER,
+    LOWER_CHKPWR_20W,
+    LOWER_CHKPWR_0W,
+    DOWN_REACHED,
+    RAISE_2ND,
+    RAISE_2ND_CHKPWR_20W,
+    RAISE_2ND_CHKPWR_0W,
+    UP_REACHED_2ND,
+    CALIBRATED
+};
+
+int coverCalibState = NOT_CALIBRATED;
+unsigned long calibTimer1  = 0;
+unsigned long calibTimer2  = 0;
+unsigned long calibStepTimer = 0;
+
+// #########################
+// #########################
