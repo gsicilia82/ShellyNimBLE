@@ -96,8 +96,6 @@ bool captivePortalActivated = false;
 unsigned long mqttDisableTime = 0;
 bool mqttDisabled = false;
 
-bool scanAutostart = true;
-
 // ##########################################################################
 // ------------------------ Shelly related variables ------------------------
 // ##########################################################################
