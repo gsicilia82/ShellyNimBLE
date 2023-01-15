@@ -46,7 +46,7 @@ bool stringToBool(String s){ return ( s == "true") ? true : false; }
 bool pub(String topic, String payload, bool ignoreReceivings=false, uint8_t qos = 0, bool retain = false, size_t length = 0, bool dup = false, uint16_t message_id = 0){
 
     if ( ignoreReceivings) {
-        #ifdef DEBUG
+        #ifdef DEBUG_MQTT
             Serial.println("MQTT Starttime for Ignoring caused by topic: " + topic);
         #endif
         mqttDisableTime = millis();
@@ -870,7 +870,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     Serial.println("MQTT received: " + top + " | " + pay);
 
     if ( mqttDisabled){
-        #ifdef DEBUG
+        #ifdef DEBUG_MQTT
             Serial.println("MQTT command handler temporarly disabled cause of timer...");
         #endif
         return;
@@ -1289,7 +1289,7 @@ void loop() {
 
         if ( mqttDisabled && ( millis() - mqttDisableTime > 500) ){
             mqttDisabled = false;
-            #ifdef DEBUG
+            #ifdef DEBUG_MQTT
                 Serial.println("MQTT commandhandler enabled again!");
             #endif
         }
