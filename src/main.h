@@ -93,6 +93,7 @@ bool wifiWasConnected = false;
 bool captivePortalActivated = false;
 
 // helper to temp. ignore arriving MQTT mesages
+int mqttIgnoreCounter = 0;
 unsigned long mqttDisableTime = 0;
 bool mqttDisabled = false;
 

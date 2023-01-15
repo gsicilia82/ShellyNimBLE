@@ -46,8 +46,10 @@ bool stringToBool(String s){ return ( s == "true") ? true : false; }
 bool pub(String topic, String payload, bool ignoreReceivings=false, uint8_t qos = 0, bool retain = false, size_t length = 0, bool dup = false, uint16_t message_id = 0){
 
     if ( ignoreReceivings) {
+        mqttIgnoreCounter++;
         #ifdef DEBUG_MQTT
-            Serial.println("MQTT Starttime for Ignoring caused by topic: " + topic);
+            Serial.print( "MQTT, pub: " + topic);
+            Serial.printf("| Ignore next <%d> incoming messages!\n", mqttIgnoreCounter);
         #endif
         mqttDisableTime = millis();
         mqttDisabled = true;
@@ -370,7 +372,7 @@ void stopCalibration( String msg=""){
 
 void coverCalibrateRoutine(){
 
-    #ifdef DEBUG
+    #ifdef DEBUG_CALIB
         Serial.println("Called coverCalibrateRoutine(). Actual coverCalibState is: " + CalibState[ coverCalibState] );
     #endif
 
@@ -471,7 +473,7 @@ void coverCalibrateRoutine(){
 
     isCalibWaiting = true;
 
-    #ifdef DEBUG
+    #ifdef DEBUG_CALIB
         Serial.println("Function coverCalibrateRoutine() finished. Actual coverCalibState is: " + CalibState[ coverCalibState] );
     #endif
 
@@ -695,28 +697,28 @@ void initMqttTopicsShelly(){
 
 void pubsubShelly() {
 
-    pub( Topic.Config, config, true);
+    pub( Topic.Config, config);
     mqttClient.subscribe(Topic.Config.c_str(), 1);
 
-    pub( Topic.Switch1, ( digitalRead( PinSwitch1) == HIGH) ? "true" : "false" );
-    pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
+    pub( Topic.Switch1, ( digitalRead( PinSwitch1) == HIGH) ? "true" : "false");
+    pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false");
     mqttClient.subscribe(Topic.RelaySet1.c_str(), 1);
 
     if ( PinSwitch2 != -1 && PinRelay2 != -1 ){
         pub( Topic.Switch2, ( digitalRead( PinSwitch2) == HIGH) ? "true" : "false" );
-        pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
+        pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false");
         mqttClient.subscribe(Topic.RelaySet2.c_str(), 1);
     }
 
     if ( devMode == "COVER"){
 
-        pub( Topic.CoverPosSet, String( coverPosition) , true);
+        pub( Topic.CoverPosSet, String( coverPosition) );
         mqttClient.subscribe(Topic.CoverPosSet.c_str(), 1);
 
-        pub( Topic.CoverStop, "false", true);
+        pub( Topic.CoverStop, "false");
         mqttClient.subscribe(Topic.CoverStop.c_str(), 1);
 
-        pub( Topic.CoverCalib, "false", true);
+        pub( Topic.CoverCalib, "false");
         mqttClient.subscribe(Topic.CoverCalib.c_str(), 1);
 
         pub( Topic.CoverState, "STOPPED");
@@ -857,10 +859,10 @@ void pubsubMain() {
 
     pub( Topic.Online, "true");
     pub( Topic.Ip, WiFi.localIP().toString() );
-    pub( Topic.Restart, "false", true);
-    pub( Topic.HardReset, "false", true);
+    pub( Topic.Restart, "false");
+    pub( Topic.HardReset, "false");
     pub( Topic.Message, "Ready");
-    pub( Topic.Filter, filterBle, true);
+    pub( Topic.Filter, filterBle);
     delay(100);
     mqttClient.subscribe( Topic.Restart.c_str(), 1);
     mqttClient.subscribe( Topic.HardReset.c_str(), 1);
@@ -877,10 +879,12 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
     Serial.println("MQTT received: " + top + " | " + pay);
 
-    if ( mqttDisabled){
+    if ( mqttIgnoreCounter > 0){
+        mqttIgnoreCounter--;
         #ifdef DEBUG_MQTT
-            Serial.println("MQTT command handler temporarly disabled cause of timer...");
+            Serial.printf("MQTT command ignored, remaining ignore-counter: %d!\n", mqttIgnoreCounter);
         #endif
+        if ( mqttIgnoreCounter == 0) mqttDisabled = false;
         return;
     }
 
@@ -1264,6 +1268,10 @@ void setup() {
         // --------------------- Start WebServer ---------------------
 
         server.begin();
+
+        // --------------------- Reset MQTT Ignore Counter ---------------------
+
+        mqttIgnoreCounter = 0;
     }
 
 }
@@ -1295,20 +1303,13 @@ void loop() {
 
         // --------------------- Disable MQTT handler temporary ---------------------
 
-        if ( mqttDisabled && ( millis() - mqttDisableTime > 500) ){
+        if ( mqttDisabled && ( millis() - mqttDisableTime > 5000) ){
             mqttDisabled = false;
+            mqttIgnoreCounter = 0;
             #ifdef DEBUG_MQTT
                 Serial.println("MQTT commandhandler enabled again!");
             #endif
         }
-
-        static unsigned long lastSlowLoop = 0;
-            if (millis() - lastSlowLoop > 5000) {
-                lastSlowLoop = millis();
-                auto freeHeap = ESP.getFreeHeap();
-                if (freeHeap < 20000) Serial.printf("Low memory: %u bytes free\n", freeHeap);
-            }
-
     }
 
 }
