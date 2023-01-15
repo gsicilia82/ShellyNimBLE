@@ -1280,7 +1280,7 @@ void loop() {
 
         // --------------------- BLE Scanner Autostart ---------------------
 
-        if ( pBLEScan->isScanning() == false && scanAutostart) {
+        if ( pBLEScan->isScanning() == false) {
             // Start scan with: duration = 0 seconds(forever), no scan end callback, not a continuation of a previous scan.
             pBLEScan->start(0, nullptr, false);
         }
