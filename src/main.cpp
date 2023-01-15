@@ -382,8 +382,7 @@ void coverCalibrateRoutine(){
 
     switch( coverCalibState) {
         case NOT_CALIBRATED:
-            stopCover();
-            report("Raise cover up to end position...");
+            report("Cover Calibration started! Raise cover up to end position...");
             setRelayCover( 1, true, 100);
             calibStepTimer = millis();
             delay(2000);
@@ -464,6 +463,8 @@ void coverCalibrateRoutine(){
         case UP_REACHED_2ND:
             report("Calibration Done! Timer2 - Timer1 = " + String(calibTimer2 - calibTimer1) );
             coverCalibState = CALIBRATED;
+            writeInt( "coverPosition", 100);
+            coverPosition = 100;
             pub( Topic.CoverPosSet, "100", true);
             break;
     }
@@ -661,7 +662,6 @@ bool MqttCommandShelly(String& topic, String& pay) {
     else if (topic == Topic.CoverCalib) {
         if ( pay == "true"){
             if ( PinADE7953 != -1){
-                report( "Cover Calibration started!");
                 coverCalibrateRoutine();
             }
             else {
