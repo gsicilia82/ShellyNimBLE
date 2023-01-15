@@ -107,7 +107,7 @@ StaticJsonDocument<400> doc; // Needed for JSON config over mqtt
 uint debounce = 100; // debounce switch input in ms
 
 bool measEnergy = false;
-int measIntervall = 100;
+int measIntervall;
 
 //variables to keep track of the timing of recent changes from switches(=debounce)
 unsigned long switchTime1 = 0;
@@ -155,10 +155,28 @@ enum {
     CALIBRATED
 };
 
+#ifdef DEBUG
+    String CalibState[] = {
+        "NOT_CALIBRATED",
+        "RAISE_1ST_CHKPWR_0W",
+        "UP_REACHED_1ST",
+        "LOWER",
+        "LOWER_CHKPWR_20W",
+        "LOWER_CHKPWR_0W",
+        "DOWN_REACHED",
+        "RAISE_2ND",
+        "RAISE_2ND_CHKPWR_20W",
+        "RAISE_2ND_CHKPWR_0W",
+        "UP_REACHED_2ND",
+        "CALIBRATED"
+    };
+#endif
+
 int coverCalibState = NOT_CALIBRATED;
 unsigned long calibTimer1  = 0;
 unsigned long calibTimer2  = 0;
 unsigned long calibStepTimer = 0;
+bool isCalibWaiting = false;
 
 // #########################
 // #########################

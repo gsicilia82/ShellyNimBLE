@@ -370,12 +370,19 @@ void stopCalibration( String msg=""){
 
 void coverCalibrateRoutine(){
 
+    #ifdef DEBUG
+        Serial.println("Called coverCalibrateRoutine(). Actual coverCalibState is: " + CalibState[ coverCalibState] );
+    #endif
+
     int limPowHigh = 15;
     int limPowLow = 1;
     unsigned long calibTimeout = 100000; // Timeout to reach end positions in ms
 
+    isCalibWaiting = false;
+
     switch( coverCalibState) {
         case NOT_CALIBRATED:
+            stopCover();
             report("Raise cover up to end position...");
             setRelayCover( 1, true, 100);
             calibStepTimer = millis();
@@ -457,8 +464,15 @@ void coverCalibrateRoutine(){
         case UP_REACHED_2ND:
             report("Calibration Done! Timer2 - Timer1 = " + String(calibTimer2 - calibTimer1) );
             coverCalibState = CALIBRATED;
+            pub( Topic.CoverPosSet, "100", true);
             break;
     }
+
+    isCalibWaiting = true;
+
+    #ifdef DEBUG
+        Serial.println("Function coverCalibrateRoutine() finished. Actual coverCalibState is: " + CalibState[ coverCalibState] );
+    #endif
 
 }
 
@@ -646,13 +660,7 @@ bool MqttCommandShelly(String& topic, String& pay) {
     }
     else if (topic == Topic.CoverCalib) {
         if ( pay == "true"){
-            stopCover();
             if ( PinADE7953 != -1){
-                measEnergy = true;
-                // Stop Scanprocess
-                //scanAutostart = false;
-                //pBLEScan->stop();
-                //
                 report( "Cover Calibration started!");
                 coverCalibrateRoutine();
             }
@@ -752,7 +760,7 @@ void SetupShelly() {
 
     // --------------------- Set measurement interval for ADE7953 ---------------------
 
-    if ( devMode == "COVER") measIntervall = 100;
+    if ( devMode == "COVER") measIntervall = 500;
     else measIntervall = 5000;
 
     // --------------------- Init Switches and Relays ---------------------
@@ -816,7 +824,7 @@ void LoopShelly() {
 
         // --------------------- If calibration routine running callback routine ---------------------
 
-        if ( isCalibRunning() ) coverCalibrateRoutine();
+        if ( isCalibRunning() && isCalibWaiting ) coverCalibrateRoutine();
     }
 
     // --------------------- Stop cover if target time is reached ---------------------
