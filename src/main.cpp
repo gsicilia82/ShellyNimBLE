@@ -866,7 +866,7 @@ void pubsubMain() {
     pub( Topic.Restart, "false");
     pub( Topic.HardReset, "false");
     pub( Topic.Message, "Ready");
-    pub( Topic.Filter, filterBle);
+    pub( Topic.Filter, sFilterBle);
     delay(100);
     mqttClient.subscribe( Topic.Restart.c_str(), 1);
     mqttClient.subscribe( Topic.HardReset.c_str(), 1);
@@ -904,8 +904,8 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     else if (top == Topic.Filter){
         pub( Topic.Filter, pay, true);
         report( "New filter activated");
-        filterBle = pay;
-        writeString( "filterBle", filterBle);
+        writeString( "sFilterBle", sFilterBle);
+        sFilterBle = pay;
     }
     else if ( MqttCommandShelly( top, pay))
         ;
@@ -924,7 +924,7 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
             //Serial.printf("Advertised Device: %s \n", advertisedDevice->toString().c_str());
         #endif
 
-        int ind = filterBle.indexOf( address);
+        int ind = sFilterBle.indexOf( address);
         if ( ind >= 0){
             int pos = ind/18;
             push( arrRssi[pos], rssi);
@@ -1223,7 +1223,7 @@ void setup() {
 
         // --------------------- SCANNER ---------------------
 
-        filterBle = readString( "filterBle", filterBle);
+        sFilterBle = readString( "sFilterBle", sFilterBle);
 
         NimBLEDevice::init("");
 
