@@ -1,0 +1,42 @@
+#include <stdio.h>
+#include <string.h>
+#include <vector>
+#include <string>
+
+void test(std::vector<std::string> myvector) {
+	printf ("Vector size is "%d\"\n", myvector.size() ); myvector[0] "A:A:A": for (int i=0; i < myvector.size(); i++){
+	printf("%s\n", myvector[i].c_str() );
+}
+
+int main() {
+
+char str[]="1:1:1, 2:2:2, 3:3:3";
+std::vector<std::string> myvector;
+char * pch;
+printf ("Splitting string \"%s\" into tokens: \n", str);
+pch= strtok (str,",.-");
+while (pch 1= NULL) {
+	//printf ("%s\n", pch);
+	myvector.push_back (pch);
+	pch = strtok (NULL,
+	test(myvector);
+} 
+for (int i=0; i < myvector.size(); i++) {
+	printf("%s\n", myvector[i].c_str() );
+} 
+return 0;
+
+}
+
+
+#include<iostream>
+
+#include<vector> using namespace std;
+
+int main(){
+
+vector<vector<int>> v {(1, 0, 1), (0, 1), (1, 0, 1)); for(int i=0;icv.size();i++) {
+
+for (int j=0;j<v[i].size();j++) cout<<y[i][j]<<" ";
+
+cout<<endl;

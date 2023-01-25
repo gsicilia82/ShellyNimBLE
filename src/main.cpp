@@ -366,6 +366,7 @@ void stopCalibration( String msg=""){
     if ( isCalibRunning() ){
         coverCalibState = NOT_CALIBRATED;
         report( "Cover Calibration stopped. " + msg);
+        pub( Topic.CoverCalib, "false", true);
         stopCover();
     }
 }
@@ -401,7 +402,7 @@ void coverCalibrateRoutine(){
             }
             else break;
         case UP_REACHED_1ST:
-            report("Lower cover down to end position measuring the time...");
+            report("Lower cover down to end position. Start timer calib1.");
             setRelayCover( 2, true, 0);
             calibTimer1 = calibStepTimer = millis();
             coverCalibState = LOWER;
@@ -412,7 +413,7 @@ void coverCalibrateRoutine(){
             break;
         case LOWER_CHKPWR_20W:
             if ( Energy.powerAcc > limPowHigh){
-                report("Power measurement verified!");
+                report("Power measurement verified! Power: " + String( Energy.powerAcc) );
                 coverCalibState = LOWER_CHKPWR_0W;
             }
             else {
@@ -423,7 +424,7 @@ void coverCalibrateRoutine(){
             if ( Energy.powerAcc < limPowLow){
                 calibTimer1 = millis() - calibTimer1;
                 float tmp = calibTimer1 / 1000;
-                report("Down Position reached after [s]: " + String( tmp) );
+                report("Stop timer calib1. Down Position reached after [s]: " + String( tmp) );
                 coverCalibState = DOWN_REACHED;
             }
             else if ( millis() - calibStepTimer > calibTimeout){
@@ -432,7 +433,7 @@ void coverCalibrateRoutine(){
             }
             else break;
         case DOWN_REACHED:
-            report("Raise cover up to end position measuring the time...");
+            report("Raise cover up to end position. Start timer calib2.");
             setRelayCover( 1, true, 100);
             calibTimer2 = calibStepTimer = millis();
             coverCalibState = RAISE_2ND;
@@ -443,7 +444,7 @@ void coverCalibrateRoutine(){
             break;
         case RAISE_2ND_CHKPWR_20W:
             if ( Energy.powerAcc > limPowHigh){
-                report("Power measurement verified!");
+                report("Power measurement verified! Power: " + String( Energy.powerAcc) );
                 coverCalibState = RAISE_2ND_CHKPWR_0W;
             }
             else {
@@ -454,7 +455,7 @@ void coverCalibrateRoutine(){
             if ( Energy.powerAcc < limPowLow){
                 calibTimer2 = millis() - calibTimer2;
                 float tmp = calibTimer2 / 1000;
-                report("UP Position reached after [s]: " + String( tmp) );
+                report("Stop timer calib2. UP Position reached after [s]: " + String( tmp) );
                 coverCalibState = UP_REACHED_2ND;
             }
             else if ( millis() - calibStepTimer > calibTimeout){
@@ -463,11 +464,14 @@ void coverCalibrateRoutine(){
             }
             else break;
         case UP_REACHED_2ND:
-            report("Calibration Done! Timer2 - Timer1 = " + String(calibTimer2 - calibTimer1) );
+            float tmp = (calibTimer2 - calibTimer1) / 1000;
+            report("Calibration Done! DeltaTimer 2-1 in s: " + String(tmp) );
             coverCalibState = CALIBRATED;
             writeInt( "coverPosition", 100);
             coverPosition = 100;
             pub( Topic.CoverPosSet, "100", true);
+            pub( Topic.CoverCalib, "false", true);
+            // coverMaxTime setzen und speichern
             break;
     }
 
@@ -1218,6 +1222,8 @@ void setup() {
         SetupShelly();
 
         // --------------------- SCANNER ---------------------
+
+        filterBle = readString( "filterBle", filterBle);
 
         NimBLEDevice::init("");
 

@@ -44,7 +44,7 @@ String config = "{ \"Config\": \"Shelly Plus 2PM v0.1.9\", \"ButtonReset\": 4, \
 
 // ------------------------ BLE Filter config ------------------------
 
-String filterBle = "c2:2d:9f:fe:46:ec,e8:61:51:5f:f0:2e";
+String filterBle = "c1:e5:19:e6:bd:14,e2:46:43:e2:2d:21";
 
 int arrRssi[10][3] = {
     { -150, -150, -150},
@@ -137,7 +137,7 @@ unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOW
 unsigned long coverTargetTime = 0; // Max time, when end position should be reached
 String coverDirection = "STOPPED";
 int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
-int coverPosition = 50;           // default value; real value from non-volatile memory
+int coverPosition = 50;            // default value; real value from non-volatile memory
 
 enum {
     NOT_CALIBRATED,
