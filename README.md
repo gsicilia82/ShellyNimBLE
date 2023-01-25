@@ -23,7 +23,7 @@ Dies sollte für alle, außer nachfolgende States erledigt werden:
 * Online (Anzeige des Online-Zustandes)
 * Switch1 und ggf. Switch2 (Anzeige ob Inputs am Shelly anliegen)
 
-Mit der aktuellen Version können nur BLE Geräte über ihre MAC gefiltert werden (Funktion als Whitelist). Im ioBroker State `mqtt-client.0.shellyscanner.devices.master.Filter` können bis zu 10 MAC Adressen eingegeben werden. Die MAC Adressen müssen über ein Komma getrennt werden.
+Mit der aktuellen Version können BLE Geräte über ihre MAC oder, wenn vorhanden, über ihre iBeacon UUID gefiltert werden (Funktion als Whitelist). Im ioBroker State `mqtt-client.0.shellyscanner.devices.master.Filter` können bis zu 10 MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden.
 
 ***
 
@@ -199,22 +199,15 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 
 * Wird die Taste länger als 10s betätigt, erfolgt ein HardReset. Hinterlegte Daten für WIFI und MQTT werden gelöscht. Das Gerät bootet nun in den AP-Mode.
 
----
-
-## Geplant
-
-* Powermessung für Shelly Plus 2PM über integriertem ADE7593
-
-* Automatische Kalibrierung der Rollladen über Powermessung
-
-* WebSerial zur Ausgabe von weiteren Informationen über die Website
-
-* Test ob OTA flash direkt auf Shelly Firmware funktioniert
 
 ---
 
 ## Changelog
 
-**Changelog 0.0.1 (05.01.2022)**
+**Changelog 0.1.0 (25.01.2022)**
+- iBeacon als Filter Möglichkeit hinzugefügt
+- Auto-Kalibrierung für Rollläden 
+- Leistungsmessung bei Shelly Plus 2PM 
 
+**Changelog 0.0.1 (05.01.2022)**
 - Erstes Release
