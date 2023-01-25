@@ -859,8 +859,24 @@ void LoopShelly() {
 ###############################################################################################################################
 */
 
-void pubsubMain() {
+void filterStringToVector(){
 
+    int str_len = sFilterBle.length() + 1;
+    char cFilterBle[str_len];
+    sFilterBle.toCharArray( cFilterBle, str_len);
+
+    char * pch;
+    printf ( "Splitting string \"%s\" into tokens: \n", sFilterBle.c_str() );
+
+    pch= strtok( cFilterBle," ,.-");
+    while (pch != NULL) {
+        printf ("%s\n", pch);
+        vecFilterBle.push_back ( pch);
+        pch = strtok ( NULL," ,.-");
+    } 
+}
+
+void pubsubMain() {
     pub( Topic.Online, "true");
     pub( Topic.Ip, WiFi.localIP().toString() );
     pub( Topic.Restart, "false");
@@ -924,6 +940,7 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
             //Serial.printf("Advertised Device: %s \n", advertisedDevice->toString().c_str());
         #endif
 
+/*
         int ind = sFilterBle.indexOf( address);
         if ( ind >= 0){
             int pos = ind/18;
@@ -931,7 +948,17 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
             pub( Topic.Results + "/" + address + "/" + deviceName, String( median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] ) ) );
             //pub( Topic.Results + "/" + address + "/" + deviceName, String( rssi) );
         }
-
+*/
+        
+        for (int i=0; i < vecFilterBle.size(); i++) {
+            if ( address == vecFilterBle[i] ){
+                int pos = i;
+                push( arrRssi[pos], rssi);
+                pub( Topic.Results + "/" + address + "/" + deviceName, String( median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] ) ) );
+                //pub( Topic.Results + "/" + address + "/" + deviceName, String( rssi) );
+                break;
+            }
+        }
     }
 
 };
@@ -1221,9 +1248,13 @@ void setup() {
 
         SetupShelly();
 
-        // --------------------- SCANNER ---------------------
+        // --------------------- Scanner filter ---------------------
 
         sFilterBle = readString( "sFilterBle", sFilterBle);
+
+        filterStringToVector();
+
+        // --------------------- Scanner process ---------------------
 
         NimBLEDevice::init("");
 

@@ -46,6 +46,8 @@ String config = "{ \"Config\": \"Shelly Plus 2PM v0.1.9\", \"ButtonReset\": 4, \
 
 String sFilterBle = "c1:e5:19:e6:bd:14,e2:46:43:e2:2d:21";
 
+std::vector<String> vecFilterBle;
+
 int arrRssi[10][3] = {
     { -150, -150, -150},
     { -150, -150, -150},
