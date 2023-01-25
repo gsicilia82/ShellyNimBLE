@@ -21,6 +21,11 @@
 // Powermeter
 #include <ADE7953.h>
 
+// iBeacon
+#include <NimBLEBeacon.h>
+#define Sprintf(f, ...) ({ char* s; asprintf(&s, f, __VA_ARGS__); String r = s; free(s); r; })
+#define ENDIAN_CHANGE_U16(x) ((((x)&0xFF00) >> 8) + (((x)&0xFF) << 8))
+
 
 NimBLEScan* pBLEScan;
 
@@ -44,7 +49,7 @@ String config = "{ \"Config\": \"Shelly Plus 2PM v0.1.9\", \"ButtonReset\": 4, \
 
 // ------------------------ BLE Filter config ------------------------
 
-String sFilterBle = "c1:e5:19:e6:bd:14,e2:46:43:e2:2d:21";
+String sFilterBle = "c1:e5:19:e6:bd:14,e2:46:43:e2:2d:21,745ed2ff-f9e8-4a93-a634-b733598c16f0-0-0";
 
 std::vector<String> vecFilterBle;
 
@@ -83,7 +88,10 @@ struct TOPIC {
     CoverState,
     CoverPosSet,
     CoverStop,
-    CoverCalib;
+    CoverCalib,
+    Power1,
+    Power2,
+    PowerAcc;
     
 } Topic;
 

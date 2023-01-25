@@ -373,7 +373,7 @@ void stopCalibration( String msg=""){
 
 void coverCalibrateRoutine(){
 
-    #ifdef DEBUG_CALIB
+    #ifdef DEBUG
         Serial.println("Called coverCalibrateRoutine(). Actual coverCalibState is: " + CalibState[ coverCalibState] );
     #endif
 
@@ -477,7 +477,7 @@ void coverCalibrateRoutine(){
 
     isCalibWaiting = true;
 
-    #ifdef DEBUG_CALIB
+    #ifdef DEBUG
         Serial.println("Function coverCalibrateRoutine() finished. Actual coverCalibState is: " + CalibState[ coverCalibState] );
     #endif
 
@@ -696,6 +696,12 @@ void initMqttTopicsShelly(){
     Topic.CoverStop   = Topic.Device + "/CoverStop";
     Topic.CoverCalib  = Topic.Device + "/CoverStartCalibration";
     Topic.CoverState  = Topic.Device + "/CoverState";
+
+    if ( PinADE7953 != -1){
+    Topic.Power1    = Topic.Device + "/Power1";
+    Topic.Power2    = Topic.Device + "/Power2";
+    Topic.PowerAcc  = Topic.Device + "/PowerAcc";
+    }
 }
 
 
@@ -818,13 +824,18 @@ void LoopShelly() {
         #ifdef DEBUG
             pub( Topic.dbg+"voltage0", String( Energy.voltage[0] ) );
             pub( Topic.dbg+"current0", String( Energy.current[0] ) );
-            pub( Topic.dbg+"power0",   String( Energy.power[0]   ) );
             pub( Topic.dbg+"voltage1", String( Energy.voltage[1] ) );
             pub( Topic.dbg+"current1", String( Energy.current[1] ) );
-            pub( Topic.dbg+"power1",   String( Energy.power[1]   ) );
-
-            pub( Topic.dbg+"powerAcc", String( Energy.powerAcc  ) );
         #endif
+
+        pub( Topic.Power1   , String( Energy.power[0] ) );
+        pub( Topic.Power2   , String( Energy.power[1] ) );
+        pub( Topic.PowerAcc , String( Energy.powerAcc ) );
+
+
+    Topic.Power1    = Topic.Device + "/Power1";
+    Topic.Power2    = Topic.Device + "/Power2";
+    Topic.PowerAcc  = Topic.Device + "/PowerAcc";
 
         lastSlowLoop = millis();
 
@@ -861,19 +872,26 @@ void LoopShelly() {
 
 void filterStringToVector(){
 
+    vecFilterBle.clear();
     int str_len = sFilterBle.length() + 1;
     char cFilterBle[str_len];
     sFilterBle.toCharArray( cFilterBle, str_len);
 
     char * pch;
-    printf ( "Splitting string \"%s\" into tokens: \n", sFilterBle.c_str() );
+    Serial.printf( "Splitting filter string \"%s\" into tokens: \n", sFilterBle.c_str() );
 
-    pch= strtok( cFilterBle," ,.-");
+    pch= strtok( cFilterBle," ,.;");
     while (pch != NULL) {
         printf ("%s\n", pch);
         vecFilterBle.push_back ( pch);
-        pch = strtok ( NULL," ,.-");
-    } 
+        pch = strtok ( NULL," ,.;");
+    }
+
+    #ifdef DEBUG
+        for(int i=0; i < vecFilterBle.size(); i++){
+            Serial.printf( "vecFilterBle[%d] = <%s> \n", i, vecFilterBle[i].c_str() );
+        }
+    #endif
 }
 
 void pubsubMain() {
@@ -919,9 +937,10 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     }
     else if (top == Topic.Filter){
         pub( Topic.Filter, pay, true);
+        sFilterBle = pay;
+        filterStringToVector();
         report( "New filter activated");
         writeString( "sFilterBle", sFilterBle);
-        sFilterBle = pay;
     }
     else if ( MqttCommandShelly( top, pay))
         ;
@@ -934,18 +953,37 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
 
     void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
 
-        String address = advertisedDevice->getAddress().toString().c_str();
+        String sAddress = advertisedDevice->getAddress().toString().c_str();
         int rssi = advertisedDevice->getRSSI();
-        #ifdef DEBUG
+        std::string strManufacturerData = advertisedDevice->getManufacturerData();
+
+        String manuf = Sprintf("%02x%02x", strManufacturerData[1], strManufacturerData[0]);
+
+        if (manuf == "004c") { // Apple
+            if (strManufacturerData.length() == 25 && strManufacturerData[2] == 0x02 && strManufacturerData[3] == 0x15){
+                NimBLEBeacon iBeacon = NimBLEBeacon();
+                iBeacon.setData( strManufacturerData);
+                sAddress = Sprintf("%s-%u-%u", std::string(iBeacon.getProximityUUID()).c_str(), ENDIAN_CHANGE_U16(iBeacon.getMajor()), ENDIAN_CHANGE_U16(iBeacon.getMinor()));
+                #ifdef DEBUG_MQTT
+                    Serial.printf( "iBeacon found with UUID: <%s> \n", sAddress.c_str() );
+                #endif
+            }
+        }
+
+        #ifdef DEBUG_MQTT
             //Serial.printf("Advertised Device: %s \n", advertisedDevice->toString().c_str());
         #endif
         
         for (int i=0; i < vecFilterBle.size(); i++) {
-            if ( address == vecFilterBle[i] ){
+            if ( sAddress == vecFilterBle[i] ){
                 int pos = i;
                 push( arrRssi[pos], rssi);
-                pub( Topic.Results + "/" + address + "/" + deviceName, String( median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] ) ) );
-                //pub( Topic.Results + "/" + address + "/" + deviceName, String( rssi) );
+                String topic = Topic.Results + "/" + sAddress + "/" + deviceName;
+                int median = median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] );
+                pub( topic, String(  median) );
+                #ifdef DEBUG_MQTT
+                    Serial.printf("Advertising device to topic: %s with RSSI: %d \n", topic.c_str(), median);
+                #endif
                 break;
             }
         }
@@ -1230,6 +1268,12 @@ void setup() {
 
         initNetwork();
 
+        // --------------------- Scanner filter ---------------------
+
+        sFilterBle = readString( "sFilterBle", sFilterBle);
+
+        filterStringToVector();
+
         // --------------------- Publish init state ---------------------
 
         pubsubMain();
@@ -1237,12 +1281,6 @@ void setup() {
         // --------------------- Setup external devices ---------------------
 
         SetupShelly();
-
-        // --------------------- Scanner filter ---------------------
-
-        sFilterBle = readString( "sFilterBle", sFilterBle);
-
-        filterStringToVector();
 
         // --------------------- Scanner process ---------------------
 
