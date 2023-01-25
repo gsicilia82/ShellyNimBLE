@@ -183,11 +183,9 @@ Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Pl
 
 ## Rollladen / COVER
 
-Für eine einfache Einrichtung sollte der Rollladen in voll geöffneter Stellung sein, wenn der Shelly eingebaut wird!
+Für Rollläden kann über MQTT eine Kalibrierung gestartet werden. Solange keine Kalibrierung durchgeführt wurde, kann über die Taster hoch- und runtergefahren werden. Eine Positionsvorgabe kann nicht durchgeführt werden. 
 
-Eine automatische Kalibrierung ist aktuell nicht möglich. Daher wird die Position eines Rollladen über die Zeit ermittelt. Die benötigte Zeit zwischen den beiden Endpositionen wird in ioBroker unter dem State `mqtt-client.0.shellyscanner.devices.master.SetMaxCoverTime` angegeben. Zeit manuell messen und hier angeben.
-
-Ein Rollladen kann über die drei States CoverUp, CoverDown und CoverStop gesteuert werden. Außerdem ist eine Sollvorgabe über SetPosition möglich.
+Ein Rollladen kann über die drei States CoverUp, CoverDown und CoverStop gesteuert werden. Außerdem ist nach erfolgter Kalibrierung eine Sollvorgabe über SetPosition möglich.
 
 Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software verriegelt.
 
