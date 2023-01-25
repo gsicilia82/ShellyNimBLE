@@ -939,16 +939,6 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
         #ifdef DEBUG
             //Serial.printf("Advertised Device: %s \n", advertisedDevice->toString().c_str());
         #endif
-
-/*
-        int ind = sFilterBle.indexOf( address);
-        if ( ind >= 0){
-            int pos = ind/18;
-            push( arrRssi[pos], rssi);
-            pub( Topic.Results + "/" + address + "/" + deviceName, String( median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] ) ) );
-            //pub( Topic.Results + "/" + address + "/" + deviceName, String( rssi) );
-        }
-*/
         
         for (int i=0; i < vecFilterBle.size(); i++) {
             if ( address == vecFilterBle[i] ){
