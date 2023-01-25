@@ -98,6 +98,7 @@ Mit PlatformIO kann auch direkt OTA geflasht werden. Für den OTA Upload muss di
 ## OTA Flasen mit *.bin über Webportal
 
 Wenn auf dem Shelly bereits diese Firmware geflasht wurde, kann über die IP des Shellys auf die Web OTA Funktion zugegriffen werden.
+Für den OTA Flashvorgang muss aus den Releases die `firmware_update.bin` verwendet werden. 
 
 ***
 
