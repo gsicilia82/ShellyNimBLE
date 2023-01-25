@@ -811,8 +811,8 @@ void LoopShelly() {
     static unsigned long lastSlowLoop = 0;
     if ( measEnergy && millis() - lastSlowLoop > measIntervall){ // Intervall = 100 if COVER else 5000
         
-        //Energy = myADE7953.getData();
-        Energy = getFakePower();
+        Energy = myADE7953.getData();
+        //Energy = getFakePower();
 
 
         #ifdef DEBUG
