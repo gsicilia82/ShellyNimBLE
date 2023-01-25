@@ -18,15 +18,28 @@
 #include <DNSServer.h>
 #include <html.h>
 
+// Powermeter
+#include <ADE7953.h>
+
+// iBeacon
+#include <NimBLEBeacon.h>
+#define Sprintf(f, ...) ({ char* s; asprintf(&s, f, __VA_ARGS__); String r = s; free(s); r; })
+#define ENDIAN_CHANGE_U16(x) ((((x)&0xFF00) >> 8) + (((x)&0xFF) << 8))
+
+
 NimBLEScan* pBLEScan;
 
-//NimBLEAddress a("c2:2d:9f:fe:46:ec");
-
 AsyncMqttClient mqttClient;
+
 Preferences preferences;
 
 DNSServer dnsServer;
+
 AsyncWebServer server(80);
+
+ADE7953 myADE7953;
+
+ENERGY Energy;
 
 // ------------------------ Shelly Plus 2PM Cover as default config ------------------------
 
@@ -36,7 +49,9 @@ String config = "{ \"Config\": \"Shelly Plus 2PM v0.1.9\", \"ButtonReset\": 4, \
 
 // ------------------------ BLE Filter config ------------------------
 
-String filterBle = "c2:2d:9f:fe:46:ec,e8:61:51:5f:f0:2e";
+String sFilterBle = "c1:e5:19:e6:bd:14,e2:46:43:e2:2d:21,745ed2ff-f9e8-4a93-a634-b733598c16f0-0-0";
+
+std::vector<String> vecFilterBle;
 
 int arrRssi[10][3] = {
     { -150, -150, -150},
@@ -52,27 +67,62 @@ int arrRssi[10][3] = {
 };
 
 // ------------------------ MQTT variables ------------------------
+String deviceName;
 
-String topicMain, deviceName, topicFilter, topicDevice, topicResults, topicMessage, topicOnline, topicIp, topicConfig, topicRestart, topicHardReset, topicSwitch1, topicSwitch2, topicRelaySet1, topicRelaySet2, topicCoverTime, topicPosSet, topicCoverStop;
+struct TOPIC {
+    String dbg,
+    Main,
+    Filter,
+    Device,
+    Results,
+    Message,
+    Online,
+    Ip,
+    Config,
+    Restart,
+    HardReset,
+    Switch1,
+    Switch2,
+    RelaySet1,
+    RelaySet2,
+    CoverState,
+    CoverPosSet,
+    CoverStop,
+    CoverCalib,
+    Power1,
+    Power2,
+    PowerAcc;
+    
+} Topic;
 
+// ##########################################################################
+// ------------------------ Device related variables ------------------------
+// ##########################################################################
+
+bool wifiWasConnected = false;
+bool captivePortalActivated = false;
+
+// helper to temp. ignore arriving MQTT mesages
+int mqttIgnoreCounter = 0;
+unsigned long mqttDisableTime = 0;
+bool mqttDisabled = false;
+
+// ##########################################################################
 // ------------------------ Shelly related variables ------------------------
+// ##########################################################################
 
 StaticJsonDocument<400> doc; // Needed for JSON config over mqtt
 
 uint debounce = 100; // debounce switch input in ms
 
-// Needed only in COVER mode
-unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOWN
-unsigned long coverTargetTime = 0; // Max time, when end position should be reached
-String coverDirection = "STOPPED";
-int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
-int coverPosition = 100;           // default value; real value from non-volatile memory
-
+bool measEnergy = false;
+int measIntervall;
 
 //variables to keep track of the timing of recent changes from switches(=debounce)
 unsigned long switchTime1 = 0;
 unsigned long switchLastTime1 = 0;
 bool switchState1, switchLastState1;
+
 unsigned long switchTime2 = 0;
 unsigned long switchLastTime2 = 0;
 bool switchState2, switchLastState2;
@@ -84,15 +134,58 @@ bool switchStateR, switchLastStateR;
 unsigned long switchTimeLongPressR = 0;
 bool flagLongPress = false;
 
-int PinSwitchR, PinSwitch1, PinSwitch2, PinRelay1, PinRelay2, PinADE7953;
+int PinSwitchR, PinSwitch1, PinSwitch2, PinRelay1, PinRelay2, PinSCL, PinSDA, PinADE7953;
 
 String switchMode1, switchMode2; // possible switchMode: BUTTON or SWITCH or DETACHED
 
-// ------------------------ Device related variables ------------------------
 
-bool wifiWasConnected = false;
-bool captivePortalActivated = false;
+// ##########################
+// Needed only in COVER mode
+// ##########################
 
-// helper to temp. ignore arriving MQTT mesages
-unsigned long mqttDisableTime = 0;
-bool mqttDisabled = false;
+unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOWN
+unsigned long coverTargetTime = 0; // Max time, when end position should be reached
+String coverDirection = "STOPPED";
+int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
+int coverPosition = 50;            // default value; real value from non-volatile memory
+
+enum {
+    NOT_CALIBRATED,
+    RAISE_1ST_CHKPWR_0W,
+    UP_REACHED_1ST,
+    LOWER,
+    LOWER_CHKPWR_20W,
+    LOWER_CHKPWR_0W,
+    DOWN_REACHED,
+    RAISE_2ND,
+    RAISE_2ND_CHKPWR_20W,
+    RAISE_2ND_CHKPWR_0W,
+    UP_REACHED_2ND,
+    CALIBRATED
+};
+
+#ifdef DEBUG
+    String CalibState[] = {
+        "NOT_CALIBRATED",
+        "RAISE_1ST_CHKPWR_0W",
+        "UP_REACHED_1ST",
+        "LOWER",
+        "LOWER_CHKPWR_20W",
+        "LOWER_CHKPWR_0W",
+        "DOWN_REACHED",
+        "RAISE_2ND",
+        "RAISE_2ND_CHKPWR_20W",
+        "RAISE_2ND_CHKPWR_0W",
+        "UP_REACHED_2ND",
+        "CALIBRATED"
+    };
+#endif
+
+int coverCalibState = NOT_CALIBRATED;
+unsigned long calibTimer1  = 0;
+unsigned long calibTimer2  = 0;
+unsigned long calibStepTimer = 0;
+bool isCalibWaiting = false;
+
+// #########################
+// #########################
