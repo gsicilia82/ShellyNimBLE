@@ -377,8 +377,11 @@ void coverCalibrateRoutine(){
         Serial.println("Called coverCalibrateRoutine(). Actual coverCalibState is: " + CalibState[ coverCalibState] );
     #endif
 
-    int limPowHigh = 20;
-    int limPowLow = 5;
+    int limPowHigh = 40;
+    int limPowLow = 15;
+    float fTmp;
+    unsigned long lTmp;
+
     unsigned long calibTimeout = 100000; // Timeout to reach end positions in ms
 
     isCalibWaiting = false;
@@ -413,7 +416,7 @@ void coverCalibrateRoutine(){
             break;
         case LOWER_CHKPWR_20W:
             if ( Energy.powerAcc > limPowHigh){
-                report("Power measurement verified! Power: " + String( Energy.powerAcc) );
+                report("Power measurement verified! Power [W]: " + String( Energy.powerAcc) );
                 coverCalibState = LOWER_CHKPWR_0W;
             }
             else {
@@ -423,8 +426,8 @@ void coverCalibrateRoutine(){
         case LOWER_CHKPWR_0W:
             if ( Energy.powerAcc < limPowLow){
                 calibTimer1 = millis() - calibTimer1;
-                float tmp = calibTimer1 / 1000;
-                report("Stop timer calib1. Down Position reached after [s]: " + String( tmp) );
+                float fTmp = calibTimer1 / 1000;
+                report("Stop timer calib1. Down Position reached after [s]: " + String( fTmp) );
                 coverCalibState = DOWN_REACHED;
             }
             else if ( millis() - calibStepTimer > calibTimeout){
@@ -444,7 +447,7 @@ void coverCalibrateRoutine(){
             break;
         case RAISE_2ND_CHKPWR_20W:
             if ( Energy.powerAcc > limPowHigh){
-                report("Power measurement verified! Power: " + String( Energy.powerAcc) );
+                report("Power measurement verified! Power [W]: " + String( Energy.powerAcc) );
                 coverCalibState = RAISE_2ND_CHKPWR_0W;
             }
             else {
@@ -454,8 +457,8 @@ void coverCalibrateRoutine(){
         case RAISE_2ND_CHKPWR_0W:
             if ( Energy.powerAcc < limPowLow){
                 calibTimer2 = millis() - calibTimer2;
-                float tmp = calibTimer2 / 1000;
-                report("Stop timer calib2. UP Position reached after [s]: " + String( tmp) );
+                fTmp = calibTimer2 / 1000;
+                report("Stop timer calib2. UP Position reached after [s]: " + String( fTmp) );
                 coverCalibState = UP_REACHED_2ND;
                 stopCover();
             }
@@ -465,15 +468,15 @@ void coverCalibrateRoutine(){
             }
             else break;
         case UP_REACHED_2ND:
-            float tmp = (calibTimer2 - calibTimer1) / 1000;
-            report("Calibration Done! DeltaTimer 2-1 in s: " + String(tmp) );
+            fTmp = (calibTimer2 - calibTimer1) / 1000;
+            report("Calibration Done! DeltaTimer 2-1 [s]: " + String( fTmp) );
             coverCalibState = CALIBRATED;
             writeInt( "coverPosition", 100);
             coverPosition = 100;
-            tmp = ( calibTimer1 > calibTimer2 ? calibTimer1 : calibTimer2 );
-            coverMaxTime = int( tmp) + 1;
+            lTmp  = ( calibTimer1 > calibTimer2 ? calibTimer1 : calibTimer2);
+            coverMaxTime = int( lTmp/1000) + 1;
             writeInt( "coverMaxTime", coverMaxTime);
-            report("Calibration CoverTime in s: " + String(coverMaxTime) );
+            report("Calibration CoverTime [s]: " + String(coverMaxTime) );
             pub( Topic.CoverPosSet, "100", true);
             pub( Topic.CoverCalib, "false", true);
             break;
@@ -722,6 +725,12 @@ void pubsubShelly() {
         pub( Topic.Switch2, ( digitalRead( PinSwitch2) == HIGH) ? "true" : "false" );
         pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false");
         mqttClient.subscribe(Topic.RelaySet2.c_str(), 1);
+    }
+
+    if ( PinADE7953 != -1 ){
+        pub( Topic.Power1   , "0");
+        pub( Topic.Power2   , "0");
+        pub( Topic.PowerAcc , "0");
     }
 
     if ( devMode == "COVER"){

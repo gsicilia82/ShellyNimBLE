@@ -165,6 +165,7 @@ enum {
 };
 
 #ifdef DEBUG
+    // Used in Serial.print for debug purposes
     String CalibState[] = {
         "NOT_CALIBRATED",
         "RAISE_1ST_CHKPWR_0W",
