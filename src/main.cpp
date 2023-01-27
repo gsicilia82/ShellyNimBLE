@@ -332,7 +332,7 @@ void setRelayCover( byte relay, bool state, int coverTargetPosition=100){
  
     bool waitAfterSwitch = stopCover(); // If cover was stopped, returns true and wait in next steps
 
-    if ( !state) return; // false = stopped, was already done in step before
+    if ( !state) return; // false = stopped, stopCover() was already done in step before
 
     if ( waitAfterSwitch) delay(1000);
 
@@ -377,8 +377,8 @@ void coverCalibrateRoutine(){
         Serial.println("Called coverCalibrateRoutine(). Actual coverCalibState is: " + CalibState[ coverCalibState] );
     #endif
 
-    int limPowHigh = 15;
-    int limPowLow = 1;
+    int limPowHigh = 20;
+    int limPowLow = 5;
     unsigned long calibTimeout = 100000; // Timeout to reach end positions in ms
 
     isCalibWaiting = false;
@@ -457,6 +457,7 @@ void coverCalibrateRoutine(){
                 float tmp = calibTimer2 / 1000;
                 report("Stop timer calib2. UP Position reached after [s]: " + String( tmp) );
                 coverCalibState = UP_REACHED_2ND;
+                stopCover();
             }
             else if ( millis() - calibStepTimer > calibTimeout){
                 stopCalibration( "Calibration routine stopped by Timeout!");
@@ -469,9 +470,12 @@ void coverCalibrateRoutine(){
             coverCalibState = CALIBRATED;
             writeInt( "coverPosition", 100);
             coverPosition = 100;
+            tmp = ( calibTimer1 > calibTimer2 ? calibTimer1 : calibTimer2 );
+            coverMaxTime = int( tmp) + 1;
+            writeInt( "coverMaxTime", coverMaxTime);
+            report("Calibration CoverTime in s: " + String(coverMaxTime) );
             pub( Topic.CoverPosSet, "100", true);
             pub( Topic.CoverCalib, "false", true);
-            // coverMaxTime setzen und speichern
             break;
     }
 
@@ -820,7 +824,6 @@ void LoopShelly() {
         Energy = myADE7953.getData();
         //Energy = getFakePower();
 
-
         #ifdef DEBUG
             pub( Topic.dbg+"voltage0", String( Energy.voltage[0] ) );
             pub( Topic.dbg+"current0", String( Energy.current[0] ) );
@@ -831,11 +834,6 @@ void LoopShelly() {
         pub( Topic.Power1   , String( Energy.power[0] ) );
         pub( Topic.Power2   , String( Energy.power[1] ) );
         pub( Topic.PowerAcc , String( Energy.powerAcc ) );
-
-
-    Topic.Power1    = Topic.Device + "/Power1";
-    Topic.Power2    = Topic.Device + "/Power2";
-    Topic.PowerAcc  = Topic.Device + "/PowerAcc";
 
         lastSlowLoop = millis();
 
