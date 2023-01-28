@@ -188,5 +188,9 @@ unsigned long calibTimer2  = 0;
 unsigned long calibStepTimer = 0;
 bool isCalibWaiting = false;
 
+// Watt limits for calibration
+int limPowHigh = 40;
+int limPowLow = 15;
+
 // #########################
 // #########################

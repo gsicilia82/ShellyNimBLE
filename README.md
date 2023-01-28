@@ -4,7 +4,12 @@ Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core
 
 Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommuikation erfolgt über MQTT (optimiert für ioBroker).
 
+* [ioBroker States](#ioBroker-States)
+
+## ioBroker States
 Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT Instanz läuft. Ich bevorzuge unter ioBroker den MQTT-Client, da ich Mosquitto als MQTT-Server verwende. Wenn ein Shelly Plus 2PM als Cover eingerichtet wird, wären nachfolgend die ioBroker States zu sehen:
+
+(muss nicht letztem Stand entsprechen)
 
 ![ ](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
 
@@ -34,8 +39,6 @@ Zu jedem Release werden zwei Dateien hinzugefügt:
 * firmware_full.bin
 
 * firmware_update.bin
-
-
 
 Wenn **erstmalig** mit esptool geflasht wird, muss **firmware_full.bin** verwendet werden. Hier sind alle benötigten Partitionen vorhanden, weshalb diese Binary eine Größe von 4MB aufweist.
 
@@ -132,7 +135,7 @@ Für SwitchX_Mode sind folgende Inhalte möglich: Switch, Button, Detached.
 
 Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Plus 2PM geladen.
 
-```
+```javascript
 {  
 "Config": "Shelly Plus 2PM v0.1.9",
 "ButtonReset": 4,
@@ -148,7 +151,7 @@ Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Pl
 }
 ```
 
-```
+```javascript
 {  
 "Config": "Shelly Plus 2PM v0.1.5",
 "ButtonReset": 27,
@@ -164,7 +167,7 @@ Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Pl
 }
 ```
 
-```
+```javascript
 {  
 "Config": "Shelly Plus 1(PM) v0.1.9",
 "ButtonReset": 25,
@@ -198,15 +201,56 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 
 * Wird die Taste länger als 10s betätigt, erfolgt ein HardReset. Hinterlegte Daten für WIFI und MQTT werden gelöscht. Das Gerät bootet nun in den AP-Mode.
 
+---
+
+## JavaScript für Optimierung der MQTT States
+
+Wenn MQTT States von ioBroker automatisch generiert werden, sind diese grundsätzlich beschreibbar, publish ist deaktiviert. Ich habe ein kleines Skript geschrieben, dass die States gemäß den Anforderungen konfiguriert, wobei auch die State-Namen den Device-Namen als Präfix erhalten. Dafür muss das Skript in der ioBroker Skript-Engine einmalig ausgeführt werden. Es beendet sich selbst, wenn es durchlief ud muss nochmals gestartet werden, wenn später weitere Shellys hinzukommen.
+
+
+
+```javascript
+let arrReadOnly = [
+    "CoverState",
+    "Message",
+    "Online",
+    "IP_Address",
+    "Power1",
+    "Power2",
+    "PowerAcc",
+    "Switch1",
+    "Switch2"
+]
+
+$('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
+    let splittedID = id.split(".");
+    let lastItem = splittedID.pop();
+    let deviceName = splittedID.pop();
+    let obj = getObject( id);
+    obj.common.name = deviceName + " " + obj.common.name;
+    if ( arrReadOnly.includes( lastItem) ){
+        obj.common.write = false;
+        obj.common.custom.publish = false;
+    }
+    else {
+        obj.common.write = true;
+        obj.common.custom.publish = true;
+    }
+    setObject( id, obj);
+});
+stopScript();
+```
 
 ---
 
 ## Changelog
 
 **Changelog 0.1.0 (25.01.2022)**
+
 - iBeacon als Filter Möglichkeit hinzugefügt
 - Auto-Kalibrierung für Rollläden 
 - Leistungsmessung bei Shelly Plus 2PM 
 
 **Changelog 0.0.1 (05.01.2022)**
+
 - Erstes Release
