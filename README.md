@@ -5,8 +5,18 @@ Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core
 Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommuikation erfolgt über MQTT (optimiert für ioBroker).
 
 * [ioBroker States](#ioBroker-States)
+* [Firmware Binaries unter Releases](#Firmware-Binaries-unter-Releases)
+* [Erstmalig Flashen mit esptool](#Erstmalig Flashen mit esptool)
+* [Erstmalig Flashen mit PlatformIO](#Erstmalig-Flashen-mit-PlatformIO)
+* [OTA-Flasen mit firmware_update.bin](#OTA-Flasen-mit-firmware_update.bin)
+* [Konfiguration des Shelly](#Konfiguration-des-Shelly)
+* [Rollladen / COVER](#Rollladen-/-COVER)
+* [Reset-Taste am Shelly](#Reset-Taste-am-Shelly)
+* [JavaScript für Optimierung der MQTT States](#JavaScript-für-Optimierung-der-MQTT-States)
+* [Changelog](#Changelog)
 
 ## ioBroker States
+
 Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT Instanz läuft. Ich bevorzuge unter ioBroker den MQTT-Client, da ich Mosquitto als MQTT-Server verwende. Wenn ein Shelly Plus 2PM als Cover eingerichtet wird, wären nachfolgend die ioBroker States zu sehen:
 
 (muss nicht letztem Stand entsprechen)
@@ -98,7 +108,7 @@ Mit PlatformIO kann auch direkt OTA geflasht werden. Für den OTA Upload muss di
 
 ***
 
-## OTA Flasen mit *.bin über Webportal
+## OTA-Flasen mit firmware_update.bin
 
 Wenn auf dem Shelly bereits diese Firmware geflasht wurde, kann über die IP des Shellys auf die Web OTA Funktion zugegriffen werden.
 Für den OTA Flashvorgang muss aus den Releases die `firmware_update.bin` verwendet werden. 
@@ -206,8 +216,6 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 ## JavaScript für Optimierung der MQTT States
 
 Wenn MQTT States von ioBroker automatisch generiert werden, sind diese grundsätzlich beschreibbar, publish ist deaktiviert. Ich habe ein kleines Skript geschrieben, dass die States gemäß den Anforderungen konfiguriert, wobei auch die State-Namen den Device-Namen als Präfix erhalten. Dafür muss das Skript in der ioBroker Skript-Engine einmalig ausgeführt werden. Es beendet sich selbst, wenn es durchlief ud muss nochmals gestartet werden, wenn später weitere Shellys hinzukommen.
-
-
 
 ```javascript
 let arrReadOnly = [
