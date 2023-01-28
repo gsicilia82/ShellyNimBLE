@@ -474,6 +474,7 @@ void coverCalibrateRoutine(){
             fTmp = (calibTimer2 - calibTimer1) / 1000;
             report("Calibration Done! DeltaTimer 2-1 [s]: " + String( fTmp) );
             coverCalibState = CALIBRATED;
+            writeInt( "coverCalibState", coverCalibState);
             writeInt( "coverPosition", 100);
             coverPosition = 100;
             lTmp  = ( calibTimer1 > calibTimer2 ? calibTimer1 : calibTimer2);
@@ -724,38 +725,39 @@ void initMqttTopicsShelly(){
 
 void pubsubShelly() {
 
-    pub( Topic.Config, config);
+    for (int i = 0; i < 2; i++) {
+
+        pub( Topic.Config, config);
+        pub( Topic.Switch1, ( digitalRead( PinSwitch1) == HIGH) ? "true" : "false");
+        pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false");
+
+        if ( PinSwitch2 != -1 && PinRelay2 != -1 ){
+            pub( Topic.Switch2, ( digitalRead( PinSwitch2) == HIGH) ? "true" : "false" );
+            pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false");
+        }
+
+        if ( PinADE7953 != -1 ){
+            pub( Topic.Power1   , "0");
+            pub( Topic.Power2   , "0");
+            pub( Topic.PowerAcc , "0");
+        }
+
+        if ( devMode == "COVER"){
+
+            pub( Topic.CoverPosSet, String( coverPosition) );
+            pub( Topic.CoverStop, "false");
+            pub( Topic.CoverCalib, "false");
+            pub( Topic.CoverState, "STOPPED");
+        }
+        if( i==0) delay(250);
+    }
+
     mqttClient.subscribe(Topic.Config.c_str(), 1);
-
-    pub( Topic.Switch1, ( digitalRead( PinSwitch1) == HIGH) ? "true" : "false");
-    pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false");
     mqttClient.subscribe(Topic.RelaySet1.c_str(), 1);
-
-    if ( PinSwitch2 != -1 && PinRelay2 != -1 ){
-        pub( Topic.Switch2, ( digitalRead( PinSwitch2) == HIGH) ? "true" : "false" );
-        pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false");
-        mqttClient.subscribe(Topic.RelaySet2.c_str(), 1);
-    }
-
-    if ( PinADE7953 != -1 ){
-        pub( Topic.Power1   , "0");
-        pub( Topic.Power2   , "0");
-        pub( Topic.PowerAcc , "0");
-    }
-
-    if ( devMode == "COVER"){
-
-        pub( Topic.CoverPosSet, String( coverPosition) );
-        mqttClient.subscribe(Topic.CoverPosSet.c_str(), 1);
-
-        pub( Topic.CoverStop, "false");
-        mqttClient.subscribe(Topic.CoverStop.c_str(), 1);
-
-        pub( Topic.CoverCalib, "false");
-        mqttClient.subscribe(Topic.CoverCalib.c_str(), 1);
-
-        pub( Topic.CoverState, "STOPPED");
-    }
+    mqttClient.subscribe(Topic.RelaySet2.c_str(), 1);
+    mqttClient.subscribe(Topic.CoverPosSet.c_str(), 1);
+    mqttClient.subscribe(Topic.CoverStop.c_str(), 1);
+    mqttClient.subscribe(Topic.CoverCalib.c_str(), 1);
 }
 
 
@@ -772,11 +774,13 @@ void SetupShelly() {
     if ( devMode == "COVER"){
         coverCalibState = readInt( "coverCalibState", coverCalibState);
         coverMaxTime = readInt( "coverMaxTime", coverMaxTime);
-        coverPosition = readInt( "coverPosition", coverPosition);
-
+        
         if ( coverCalibState < CALIBRATED){
             coverPosition = 50;
             writeInt( "coverPosition", coverPosition);
+        }
+        else {
+            coverPosition = readInt( "coverPosition", coverPosition);
         }
     }
 
@@ -912,16 +916,19 @@ void filterStringToVector(){
 }
 
 void pubsubMain() {
-    pub( Topic.Online, "true");
-    pub( Topic.Ip, WiFi.localIP().toString() );
-    pub( Topic.Restart, "false");
-    pub( Topic.HardReset, "false");
-    pub( Topic.Message, "Ready");
-    pub( Topic.Filter, sFilterBle);
-    delay(100);
-    mqttClient.subscribe( Topic.Restart.c_str(), 1);
-    mqttClient.subscribe( Topic.HardReset.c_str(), 1);
-    mqttClient.subscribe( Topic.Filter.c_str(), 1);
+
+    for (int i = 0; i < 2; i++) {
+        pub( Topic.Online, "true");
+        pub( Topic.Ip, WiFi.localIP().toString() );
+        pub( Topic.Restart, "false");
+        pub( Topic.HardReset, "false");
+        pub( Topic.Message, "Ready");
+        pub( Topic.Filter, sFilterBle);
+        if( i==0) delay(250);
+    }
+        mqttClient.subscribe( Topic.Restart.c_str(), 1);
+        mqttClient.subscribe( Topic.HardReset.c_str(), 1);
+        mqttClient.subscribe( Topic.Filter.c_str(), 1);
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
@@ -1312,6 +1319,7 @@ void setup() {
 
         ArduinoOTA
             .onStart([]() {
+                report( "OTA update started ...");
                 String type;
                 if (ArduinoOTA.getCommand() == U_FLASH)
                     type = "sketch";

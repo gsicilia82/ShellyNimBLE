@@ -218,6 +218,8 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 
 Wenn MQTT States von ioBroker automatisch generiert werden, sind diese grundsätzlich beschreibbar, publish ist deaktiviert. Ich habe ein kleines Skript geschrieben, dass die States gemäß den Anforderungen konfiguriert, wobei auch die State-Namen den Device-Namen als Präfix erhalten. Dafür muss das Skript in der ioBroker Skript-Engine einmalig ausgeführt werden. Es beendet sich selbst, wenn es durchlief ud muss nochmals gestartet werden, wenn später weitere Shellys hinzukommen.
 
+Dieses Skript funktioniert, wie hier hinterlegt, ausschließlich über die Instanz 0 vm MQTT-Client Adapter. Wenn andere Adapter verwendet werden, muss das Skript entsprechend angepasst werden.
+
 ```javascript
 let arrReadOnly = [
     "CoverState",
@@ -236,17 +238,27 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
     let lastItem = splittedID.pop();
     let deviceName = splittedID.pop();
     let obj = getObject( id);
-    obj.common.name = deviceName + " " + obj.common.name;
+    if ( !obj.common.name.includes( deviceName) ) obj.common.name = deviceName + " " + obj.common.name; // change name
     if ( arrReadOnly.includes( lastItem) ){
+        // disable publish and write access
         obj.common.write = false;
-        obj.common.custom.publish = false;
+        obj.common.custom["mqtt-client.0"].publish = false;
     }
     else {
+        // enable publish and write access
         obj.common.write = true;
-        obj.common.custom.publish = true;
+        obj.common.custom["mqtt-client.0"].publish = true;
     }
+    
+    if ( getState( id).val == "true" || getState( id).val == "false"){
+        // set boolean mode
+        obj.common.type = "boolean";
+    }
+    
     setObject( id, obj);
+    if( lastItem=="Restart") cld( obj);
 });
+
 stopScript();
 ```
 
