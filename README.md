@@ -220,32 +220,32 @@ Wenn MQTT States von ioBroker automatisch generiert werden, sind diese grundsät
 
 ```javascript
 let arrReadOnly = [
-    "CoverState",
-    "Message",
-    "Online",
-    "IP_Address",
-    "Power1",
-    "Power2",
-    "PowerAcc",
-    "Switch1",
-    "Switch2"
+    "CoverState",
+    "Message",
+    "Online",
+    "IP_Address",
+    "Power1",
+    "Power2",
+    "PowerAcc",
+    "Switch1",
+    "Switch2"
 ]
 
 $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
-    let splittedID = id.split(".");
-    let lastItem = splittedID.pop();
-    let deviceName = splittedID.pop();
-    let obj = getObject( id);
-    obj.common.name = deviceName + " " + obj.common.name;
-    if ( arrReadOnly.includes( lastItem) ){
-        obj.common.write = false;
-        obj.common.custom.publish = false;
-    }
-    else {
-        obj.common.write = true;
-        obj.common.custom.publish = true;
-    }
-    setObject( id, obj);
+    let splittedID = id.split(".");
+    let lastItem = splittedID.pop();
+    let deviceName = splittedID.pop();
+    let obj = getObject( id);
+    obj.common.name = deviceName + " " + obj.common.name;
+    if ( arrReadOnly.includes( lastItem) ){
+        obj.common.write = false;
+        obj.common.custom.publish = false;
+    }
+    else {
+        obj.common.write = true;
+        obj.common.custom.publish = true;
+    }
+    setObject( id, obj);
 });
 stopScript();
 ```
