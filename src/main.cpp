@@ -318,6 +318,10 @@ bool stopCover(){ // returns false if already stopped, otherwise true
     if ( PinADE7953 != -1) measEnergy = false;    // disable power measurement in loop()
     calcCoverPosition( "STOPPED");
 
+    pub( Topic.Power1, "0");
+    pub( Topic.Power2, "0");
+    pub( Topic.PowerAcc, "0");
+
     return true;
 }
 
@@ -377,8 +381,7 @@ void coverCalibrateRoutine(){
         Serial.println("Called coverCalibrateRoutine(). Actual coverCalibState is: " + CalibState[ coverCalibState] );
     #endif
 
-    int limPowHigh = 40;
-    int limPowLow = 15;
+
     float fTmp;
     unsigned long lTmp;
 
@@ -507,13 +510,16 @@ void setRelayLight( byte relay, bool state){
         Serial.println( "LIGHT: Set Relay 1 to: " + boolToString( state) );
         delay(100);
         pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
+        if ( !state) pub( Topic.Power1, "0");
     }
     else if ( relay == 2){
         digitalWrite(PinRelay2, state);
         Serial.println( "LIGHT: Set Relay 2 to: " + boolToString( state) );
         delay(100);
         pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
+        if ( !state) pub( Topic.Power2, "0");
     }
+    if ( digitalRead( PinRelay1) == LOW && digitalRead( PinRelay2) == LOW) pub( Topic.PowerAcc, "0");
 }
 void toggleRelay( byte relay){
     bool state;
@@ -523,6 +529,7 @@ void toggleRelay( byte relay){
         state = digitalRead( PinRelay1) == HIGH;
         if ( PinADE7953 != -1) measEnergy = state; // enable/disable power measurement in loop()
         pub( Topic.RelaySet1, state ? "true" : "false" , true);
+        if ( !state) pub( Topic.Power1, "0");
     }
     else if ( relay == 2){
         digitalWrite(PinRelay2, !digitalRead(PinRelay2) );
@@ -530,7 +537,10 @@ void toggleRelay( byte relay){
         state = digitalRead( PinRelay2) == HIGH;
         if ( PinADE7953 != -1) measEnergy = state; // enable/disable power measurement in loop()
         pub( Topic.RelaySet2, state ? "true" : "false" , true);
+        pub( Topic.Power2, "0");
+        if ( !state) pub( Topic.Power2, "0");
     }
+    if ( digitalRead( PinRelay1) == LOW && digitalRead( PinRelay2) == LOW) pub( Topic.PowerAcc, "0");
 }
 
 
