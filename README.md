@@ -1,14 +1,15 @@
 # ShellyNimBLE
 
-Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core) als BLE Scanner zu verwenden. Es gibt tolle Projekte, wie espresense, die aber noch keine SingleCore ESP32 unterstützen.
+Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core) als BLE Scanner zu verwenden. Es gibt favorisierte Projekte, wie espresense, die aber noch keine SingleCore ESP32 unterstützen.
 
-Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommuikation erfolgt über MQTT (optimiert für ioBroker).
+Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommunikation erfolgt über MQTT (optimiert für ioBroker).
+Das Scannen funktioniert für statische MAC-Adressen und iBeacon UUIDs.
 
 * [ioBroker States](#ioBroker-States)
 * [Firmware Binaries unter Releases](#Firmware-Binaries-unter-Releases)
-* [Erstmalig Flashen mit esptool](#Erstmalig Flashen mit esptool)
+* [Erstmalig Flashen mit esptool](#Erstmalig-Flashen-mit-esptool)
 * [Erstmalig Flashen mit PlatformIO](#Erstmalig-Flashen-mit-PlatformIO)
-* [OTA-Flasen mit firmware_update.bin](#OTA-Flasen-mit-firmware_update.bin)
+* [OTA Flashen über Webportal](#OTA-Flashen-über-Webportal)
 * [Konfiguration des Shelly](#Konfiguration-des-Shelly)
 * [Rollladen / COVER](#Rollladen-/-COVER)
 * [Reset-Taste am Shelly](#Reset-Taste-am-Shelly)
@@ -108,7 +109,7 @@ Mit PlatformIO kann auch direkt OTA geflasht werden. Für den OTA Upload muss di
 
 ***
 
-## OTA-Flasen mit firmware_update.bin
+## OTA Flashen über Webportal
 
 Wenn auf dem Shelly bereits diese Firmware geflasht wurde, kann über die IP des Shellys auf die Web OTA Funktion zugegriffen werden.
 Für den OTA Flashvorgang muss aus den Releases die `firmware_update.bin` verwendet werden. 
