@@ -145,7 +145,7 @@ String switchMode1, switchMode2; // possible switchMode: BUTTON or SWITCH or DET
 
 unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOWN
 unsigned long coverTargetTime = 0; // Max time, when end position should be reached
-String coverDirection = "STOPPED";
+String coverDirection = "stopped";
 int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
 int coverPosition = 50;            // default value; real value from non-volatile memory
 

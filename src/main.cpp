@@ -126,7 +126,7 @@ ENERGY getFakePower(){
 
     ENERGY Fake;
 
-    if ( coverDirection != "STOPPED"){
+    if ( coverDirection != "stopped"){
         
         float pwr = (millis() - coverStartTime)/100;
         if ( pwr > 200) pwr = 0;
@@ -240,7 +240,7 @@ bool convertJsonToConfig( String& config, bool withPub=true){
 }
 
 
-void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLOSING, STOPPED
+void calcCoverPosition( String cmd, int coverTargetPosition=100){ //opening, closing, stopped
 
     #ifdef DEBUG
         Serial.printf("Called calcCoverPosition() with: cmd=%s, coverTargetPosition=%d \n", cmd, coverTargetPosition);
@@ -248,15 +248,15 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLO
 
     pub( Topic.CoverState, cmd);
 
-    if ( cmd == "STOPPED"){
+    if ( cmd == "stopped"){
         // calc actual position and report/save
         unsigned long deltaTime = millis() - coverStartTime;
 
-        if ( coverCalibState == CALIBRATED && coverDirection == "OPENING"){
+        if ( coverCalibState == CALIBRATED && coverDirection == "opening"){
             coverPosition = coverPosition + (int)( deltaTime*100 / ( coverMaxTime*1000) +0.5);
             coverPosition = coverPosition > 100 ? 100 : coverPosition;
         }
-        else if ( coverCalibState == CALIBRATED && coverDirection == "CLOSING"){
+        else if ( coverCalibState == CALIBRATED && coverDirection == "closing"){
             coverPosition = coverPosition - (int)( deltaTime*100 / ( coverMaxTime*1000) +0.5);
             coverPosition = coverPosition < 0 ? 0 : coverPosition;
         }
@@ -269,7 +269,7 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLO
         if ( PinADE7953 != -1) measEnergy = false;    // disable power measurement in loop()
 
     }
-    else if ( cmd == "OPENING"){
+    else if ( cmd == "opening"){
         // activate loop statement and set time limit in loop observation
         coverStartTime = millis();
         if ( coverCalibState == CALIBRATED){
@@ -281,7 +281,7 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //OPENING, CLO
         coverDirection = cmd; // enable time measurement in loop()
         if ( PinADE7953 != -1) measEnergy = true;    // enable power measurement in loop()
     }
-    else if ( cmd == "CLOSING"){
+    else if ( cmd == "closing"){
         // activate loop statement and set time limit in loop observation
         coverStartTime = millis();
         if ( coverCalibState == CALIBRATED){
@@ -303,20 +303,20 @@ bool stopCover(){ // returns false if already stopped, otherwise true
         Serial.printf("Called stopCover(). Actual direction is: %s \n", coverDirection);
     #endif
 
-    if ( coverDirection == "STOPPED") return false;
+    if ( coverDirection == "stopped") return false;
 
-    if ( coverDirection == "OPENING"){
+    if ( coverDirection == "opening"){
         digitalWrite(PinRelay1, LOW);
         Serial.println( "COVER: Set Relay 1 to: false");
         pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
     }
-    else if ( coverDirection == "CLOSING"){
+    else if ( coverDirection == "closing"){
         digitalWrite(PinRelay2, LOW);
         Serial.println( "COVER: Set Relay 2 to: false");
         pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
     }
     if ( PinADE7953 != -1) measEnergy = false;    // disable power measurement in loop()
-    calcCoverPosition( "STOPPED");
+    calcCoverPosition( "stopped");
 
     pub( Topic.Power1, "0");
     pub( Topic.Power2, "0");
@@ -343,7 +343,7 @@ void setRelayCover( byte relay, bool state, int coverTargetPosition=100){
     if ( relay == 1){ // relay1 means always UP
         if ( coverPosition < 100){
             digitalWrite(PinRelay1, !digitalRead( PinRelay2) ); // Inverted relay2 should be HIGH, more secure as direct HIGH
-            calcCoverPosition( "OPENING", coverTargetPosition);
+            calcCoverPosition( "opening", coverTargetPosition);
             Serial.println( "COVER: Set Relay 1 to: true");
         }
         else {
@@ -354,7 +354,7 @@ void setRelayCover( byte relay, bool state, int coverTargetPosition=100){
     else if ( relay == 2){// relay2 means always DOWN
         if ( coverPosition > 0){
             digitalWrite(PinRelay2, !digitalRead( PinRelay1) ); // Inverted Relay1 should be HIGH, more secure as direct HIGH
-            calcCoverPosition( "CLOSING", coverTargetPosition);
+            calcCoverPosition( "closing", coverTargetPosition);
             Serial.println( "COVER: Set Relay 2 to: true");
         }
         else {
@@ -747,7 +747,7 @@ void pubsubShelly() {
             pub( Topic.CoverPosSet, String( coverPosition) );
             pub( Topic.CoverStop, "false");
             pub( Topic.CoverCalib, "false");
-            pub( Topic.CoverState, "STOPPED");
+            pub( Topic.CoverState, "stopped");
         }
         if( i==0) delay(250);
     }
@@ -868,7 +868,7 @@ void LoopShelly() {
     // --------------------- Stop cover if target time is reached ---------------------
 
     if ( devMode == "COVER"){
-        if ( coverDirection != "STOPPED" && millis() > coverTargetTime){
+        if ( coverDirection != "stopped" && millis() > coverTargetTime){
             #ifdef DEBUG
                 Serial.printf("Loop timer triggered\n");
             #endif
