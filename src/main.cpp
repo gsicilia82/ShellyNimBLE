@@ -274,6 +274,7 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //opening, clo
         coverStartTime = millis();
         if ( coverCalibState == CALIBRATED){
             coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverTargetPosition - coverPosition) / 100 ;
+            if ( coverTargetPosition == 100) coverTargetTime += 2000;
         }
         else {
             coverTargetTime = coverStartTime + ( 100*1000); // default 100s if not calibrated
@@ -286,6 +287,7 @@ void calcCoverPosition( String cmd, int coverTargetPosition=100){ //opening, clo
         coverStartTime = millis();
         if ( coverCalibState == CALIBRATED){
             coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverPosition - coverTargetPosition) / 100 ;
+            if ( coverTargetPosition == 0) coverTargetTime += 2000;
         }
         else {
             coverTargetTime = coverStartTime + ( 100*1000); // default 100s if not calibrated
