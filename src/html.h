@@ -150,7 +150,7 @@ const char captive_html[] PROGMEM = R"rawliteral(
           <br>
           <label for="name">Config</label>
           <br>
-          <input value="optional" type="text" id="config" name="config">
+          <input value="Overwrite with config!" type="text" id="config" name="config">
           <br>
           <br>
           <input type="submit" value="Submit">

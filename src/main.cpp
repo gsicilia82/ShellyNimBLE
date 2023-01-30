@@ -771,6 +771,10 @@ void SetupShelly() {
     config = readString( "config", config);
     convertJsonToConfig( config);
 
+    #ifdef DEBUG
+        Serial.println(">>> Init Shelly converting config done.");
+    #endif
+
     // --------------------- Read values from non-volatile memory if in COVER mode ---------------------
 
     if ( devMode == "COVER"){
@@ -790,6 +794,10 @@ void SetupShelly() {
 
     initMqttTopicsShelly();
 
+    #ifdef DEBUG
+        Serial.println(">>> Init Shelly MQTT topics done.");
+    #endif
+
     // --------------------- Modify topics for COVER mode ---------------------
 
     if ( PinRelay2 == -1 || PinSwitch2 == -1) devMode == "LIGHT"; // Force LIGHT Mode if 2nd Input or Output disabled
@@ -798,6 +806,10 @@ void SetupShelly() {
         Topic.RelaySet1  = Topic.Device + "/CoverUp";
         Topic.RelaySet2  = Topic.Device + "/CoverDown";
     }
+
+    #ifdef DEBUG
+        Serial.println(">>> Init Shelly modification of MQTT topics done.");
+    #endif
 
     // --------------------- Set measurement interval for ADE7953 ---------------------
 
@@ -825,9 +837,19 @@ void SetupShelly() {
 
     pubsubShelly();
 
+    #ifdef DEBUG
+        Serial.println(">>> Init Shelly publish init states done.");
+    #endif
+
     // --------------------- Init ADE7953 ---------------------
 
-    if ( PinADE7953 != -1) myADE7953.initialize( PinSCL, PinSDA);
+    if ( PinADE7953 != -1){
+        myADE7953.initialize( PinSCL, PinSDA);
+
+        #ifdef DEBUG
+            Serial.println(">>> Init Shelly ADE7953 done.");
+        #endif
+    }
 
 }
 
@@ -900,19 +922,38 @@ void filterStringToVector(){
     char cFilterBle[str_len];
     sFilterBle.toCharArray( cFilterBle, str_len);
 
-    char * pch;
     Serial.printf( "Splitting filter string \"%s\" into tokens: \n", sFilterBle.c_str() );
 
-    pch= strtok( cFilterBle," ,.;");
-    while (pch != NULL) {
-        printf ("%s\n", pch);
-        vecFilterBle.push_back ( pch);
-        pch = strtok ( NULL," ,.;");
+    char *end_str;
+    char *token = strtok_r( cFilterBle, " ,.;", &end_str);
+    while (token != NULL) {
+        char *end_token;
+        printf ("Entry token: %s\n", token);
+        char *token2 = strtok_r(token, "=", &end_token);
+        int i=0;
+        while (token2 != NULL)
+        {
+            printf("Sub tokens = %s\n", token2);
+            if (i==0){
+                vecFilterBle.push_back( token2);
+                vecFilterAlias.push_back( token2);
+            }
+            else{
+                vecFilterAlias.pop_back();
+                vecFilterAlias.push_back( token2);
+            } 
+            token2 = strtok_r(NULL, "=", &end_token);
+            i+=1;
+        }
+        token = strtok_r(NULL, ",", &end_str);
     }
 
     #ifdef DEBUG
+        for(int i=0; i < vecFilterAlias.size(); i++){
+            printf("vecFilterAlias: %s\n", vecFilterAlias[i].c_str() );
+        }
         for(int i=0; i < vecFilterBle.size(); i++){
-            Serial.printf( "vecFilterBle[%d] = <%s> \n", i, vecFilterBle[i].c_str() );
+            printf("vecFilterBle: %s\n", vecFilterBle[i].c_str() );
         }
     #endif
 }
@@ -963,6 +1004,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     }
     else if (top == Topic.Filter){
         pub( Topic.Filter, pay, true);
+        pay.replace( " ", "");
         sFilterBle = pay;
         filterStringToVector();
         report( "New filter activated");
@@ -1110,7 +1152,7 @@ void setupApServer(){
 			Serial.println( config);
 			bool convertOk = convertJsonToConfig( config, false);
             if ( convertOk) writeString( "config", config);
-            else Serial.print( "Received Config is not ok. Starting with default config...");
+            else Serial.println( "Received Config is not ok. Starting with default config (Shelly Plus 2PM v0.1.9)...");
 			if ( config.length() > 0 ) receivedParams++;
 		}
 
@@ -1290,23 +1332,42 @@ void setup() {
 
         initMqttTopics();
 
+        #ifdef DEBUG
+            Serial.println(">>> Init MQTT Topics done.");
+        #endif
+
         // --------------------- Init Network ---------------------
 
         initNetwork();
 
+        #ifdef DEBUG
+            Serial.println(">>> Init Network done.");
+        #endif
+
         // --------------------- Scanner filter ---------------------
 
         sFilterBle = readString( "sFilterBle", sFilterBle);
-
         filterStringToVector();
+
+        #ifdef DEBUG
+            Serial.println(">>> Init ScanFilter done.");
+        #endif
 
         // --------------------- Publish init state ---------------------
 
         pubsubMain();
 
+        #ifdef DEBUG
+            Serial.println(">>> Init 1st publish of states done.");
+        #endif
+
         // --------------------- Setup external devices ---------------------
 
         SetupShelly();
+
+        #ifdef DEBUG
+            Serial.println(">>> Init Shelly done.");
+        #endif
 
         // --------------------- Scanner process ---------------------
 
@@ -1316,6 +1377,10 @@ void setup() {
 
         pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks(), true);
         pBLEScan->setMaxResults(0); // do not store the scan results, use callback only.
+
+        #ifdef DEBUG
+            Serial.println(">>> Init BLE scan process done.");
+        #endif
 
         // --------------------- Setup OTA function for Arduino or PlatformIO ---------------------
 
@@ -1348,6 +1413,10 @@ void setup() {
 
         ArduinoOTA.begin();
 
+        #ifdef DEBUG
+            Serial.println(">>> Init Arduino OTA done.");
+        #endif
+
         // --------------------- Start OTA function over WebServer ---------------------
 
         server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -1357,9 +1426,11 @@ void setup() {
         AsyncElegantOTA.begin(&server);    // Start ElegantOTA on "/update"
         Serial.println("HTTP OTA server started");
 
-        // --------------------- Start WebServer ---------------------
-
         server.begin();
+
+        #ifdef DEBUG
+            Serial.println(">>> Init OTA webserver done.");
+        #endif
 
         // --------------------- Reset MQTT Ignore Counter ---------------------
 

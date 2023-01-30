@@ -49,9 +49,10 @@ String config = "{ \"Config\": \"Shelly Plus 2PM v0.1.9\", \"ButtonReset\": 4, \
 
 // ------------------------ BLE Filter config ------------------------
 
-String sFilterBle = "c1:e5:19:e6:bd:14,e2:46:43:e2:2d:21,745ed2ff-f9e8-4a93-a634-b733598c16f0-0-0";
+String sFilterBle = "e2:d3:83:26:0e:a6=gts4mini,e2:46:43:e2:2d:21=brieftasche,745ed2ff-f9e8-4a93-a634-b733598c16f0-0-0=pixel7";
 
 std::vector<String> vecFilterBle;
+std::vector<String> vecFilterAlias;
 
 int arrRssi[10][3] = {
     { -150, -150, -150},
