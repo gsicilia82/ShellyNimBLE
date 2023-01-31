@@ -1182,7 +1182,8 @@ void WiFiEvent(WiFiEvent_t event) {
     case SYSTEM_EVENT_STA_GOT_IP:
         Serial.print("WiFi connected with IP address: ");
         Serial.println( WiFi.localIP() );
-		writeInt( "wifiValidated", 1);
+        int valid = readInt( "wifiValidated", 0);
+		if ( valid == 0) writeInt( "wifiValidated", 1);
         wifiWasConnected = true;
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
@@ -1197,7 +1198,8 @@ void WiFiEvent(WiFiEvent_t event) {
 
 
 void onMqttConnect( bool sessionPresent) {
-	writeInt( "mqttValidated", 1);
+	int valid = readInt( "mqttValidated", 0);
+	if ( valid == 0) writeInt( "mqttValidated", 1);
 }
 
 void initCaptivePortal(){
