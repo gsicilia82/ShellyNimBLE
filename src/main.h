@@ -82,6 +82,7 @@ struct TOPIC {
     Config,
     Restart,
     HardReset,
+    Info,
     Switch1,
     Switch2,
     RelaySet1,
@@ -107,6 +108,9 @@ bool captivePortalActivated = false;
 int mqttIgnoreCounter = 0;
 unsigned long mqttDisableTime = 0;
 bool mqttDisabled = false;
+
+int infoIntervall = 30000;
+unsigned long infoIntervallCounterpart = 0;
 
 // ##########################################################################
 // ------------------------ Shelly related variables ------------------------

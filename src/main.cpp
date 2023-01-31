@@ -1169,6 +1169,7 @@ void setupApServer(){
 	});
 }
 
+
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
 
     Serial.println("Disconnected from MQTT. Restarting ESP...");
@@ -1311,6 +1312,7 @@ void initMqttTopics(){
     Topic.Restart    = Topic.Device + "/Restart";
     Topic.HardReset  = Topic.Device + "/HardReset";
     Topic.Filter     = Topic.Device + "/Filter";
+    Topic.Info     = Topic.Device + "/Info";
 
     Topic.dbg = Topic.Device + "/Debug/Dbg_";
 }
@@ -1434,9 +1436,13 @@ void setup() {
             Serial.println(">>> Init OTA webserver done.");
         #endif
 
-        // --------------------- Reset MQTT Ignore Counter ---------------------
+        // --------------------- Set different variables ---------------------
 
         mqttIgnoreCounter = 0;
+        infoIntervallCounterpart = millis();
+
+        Serial.print( "Boot time: ");
+        Serial.println( millis());
 
     }
 
@@ -1476,7 +1482,14 @@ void loop() {
                 Serial.println("MQTT commandhandler enabled again!");
             #endif
         }
- 
+
+        // --------------------- Publish info state to MQTT ---------------------
+
+        if ( millis() - infoIntervallCounterpart > infoIntervall){
+            infoIntervallCounterpart = millis();
+
+            //pub( Topic.Info, "Uptime: " + String( tmp) + "h");
+        }
     }
 
 }
