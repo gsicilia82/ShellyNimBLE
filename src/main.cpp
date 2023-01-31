@@ -103,8 +103,8 @@ void writeString( const char* key, String value, const char* space="shelly"){
 }
 
 void restartDevice(){
-    report("Restarting device in 2s ...");
-    delay(2000);
+    report("Restarting device in 1s ...");
+    delay(1000);
     ESP.restart();
 }
 
@@ -751,7 +751,7 @@ void pubsubShelly() {
             pub( Topic.CoverCalib, "false");
             pub( Topic.CoverState, "stopped");
         }
-        if( i==0) delay(250);
+        if( i==0) delay(500);
     }
 
     mqttClient.subscribe(Topic.Config.c_str(), 1);
@@ -967,7 +967,7 @@ void pubsubMain() {
         pub( Topic.HardReset, "false");
         pub( Topic.Message, "Ready");
         pub( Topic.Filter, sFilterBle);
-        if( i==0) delay(250);
+        if( i==0) delay(500);
     }
         mqttClient.subscribe( Topic.Restart.c_str(), 1);
         mqttClient.subscribe( Topic.HardReset.c_str(), 1);
@@ -1046,7 +1046,7 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
             if ( sAddress == vecFilterBle[i] ){
                 int pos = i;
                 push( arrRssi[pos], rssi);
-                String topic = Topic.Results + "/" + sAddress + "/" + deviceName;
+                String topic = Topic.Results + "/" + vecFilterAlias[i] + "/" + deviceName;
                 int median = median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] );
                 pub( topic, String(  median) );
                 #ifdef DEBUG_MQTT
