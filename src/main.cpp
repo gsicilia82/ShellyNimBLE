@@ -1182,8 +1182,7 @@ void WiFiEvent(WiFiEvent_t event) {
     case SYSTEM_EVENT_STA_GOT_IP:
         Serial.print("WiFi connected with IP address: ");
         Serial.println( WiFi.localIP() );
-        int valid = readInt( "wifiValidated", 0);
-		if ( valid == 0) writeInt( "wifiValidated", 1);
+        writeInt( "wifiValidated", 1);
         wifiWasConnected = true;
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
@@ -1198,8 +1197,8 @@ void WiFiEvent(WiFiEvent_t event) {
 
 
 void onMqttConnect( bool sessionPresent) {
-	int valid = readInt( "mqttValidated", 0);
-	if ( valid == 0) writeInt( "mqttValidated", 1);
+	int mqttValidated = readInt( "mqttValidated", 0);
+	if ( mqttValidated == 0) writeInt( "mqttValidated", 1);
 }
 
 void initCaptivePortal(){
@@ -1271,6 +1270,7 @@ void initNetwork(){
     mqttClient.onMessage( onMqttMessage);
     mqttClient.setServer( mqttServer.c_str(), mqttPort);
     mqttClient.setWill( Topic.Online.c_str(), 1, true, "false");
+    mqttClient.setClientId( WiFi.localIP().toString().c_str() );
     mqttClient.connect();
     timeout = 0;
     while ( !mqttClient.connected() ){
@@ -1437,6 +1437,7 @@ void setup() {
         // --------------------- Reset MQTT Ignore Counter ---------------------
 
         mqttIgnoreCounter = 0;
+
     }
 
 }
@@ -1475,6 +1476,7 @@ void loop() {
                 Serial.println("MQTT commandhandler enabled again!");
             #endif
         }
+ 
     }
 
 }
