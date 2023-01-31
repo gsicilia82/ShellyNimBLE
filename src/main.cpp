@@ -1439,10 +1439,6 @@ void setup() {
         // --------------------- Set different variables ---------------------
 
         mqttIgnoreCounter = 0;
-        infoIntervallCounterpart = millis();
-
-        Serial.print( "Boot time: ");
-        Serial.println( millis());
 
     }
 
@@ -1483,13 +1479,6 @@ void loop() {
             #endif
         }
 
-        // --------------------- Publish info state to MQTT ---------------------
-
-        if ( millis() - infoIntervallCounterpart > infoIntervall){
-            infoIntervallCounterpart = millis();
-
-            //pub( Topic.Info, "Uptime: " + String( tmp) + "h");
-        }
     }
 
 }
