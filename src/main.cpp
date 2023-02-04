@@ -1317,6 +1317,22 @@ void initMqttTopics(){
     Topic.dbg = Topic.Device + "/Debug/Dbg_";
 }
 
+
+
+String getLocalTime(){
+
+    struct tm timeinfo;
+    if(!getLocalTime(&timeinfo)){
+        Serial.println("Failed to obtain time");
+        return "Error getting time";
+    }
+    char timeStringBuff[50]; //50 chars should be enough
+    strftime(timeStringBuff, sizeof(timeStringBuff), "%B %d %Y %H:%M", &timeinfo);
+    String asString(timeStringBuff);
+    return asString;
+}
+
+
 void setup() {
 
     Serial.begin(115200);
@@ -1435,6 +1451,12 @@ void setup() {
         #ifdef DEBUG
             Serial.println(">>> Init OTA webserver done.");
         #endif
+
+        // --------------------- Get actual time and publish info ---------------------
+
+        configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+        Info.bootTime = getLocalTime();
+        pub( Topic.Info, Info.toString() );
 
         // --------------------- Set different variables ---------------------
 

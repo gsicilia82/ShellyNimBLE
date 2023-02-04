@@ -26,6 +26,9 @@
 #define Sprintf(f, ...) ({ char* s; asprintf(&s, f, __VA_ARGS__); String r = s; free(s); r; })
 #define ENDIAN_CHANGE_U16(x) ((((x)&0xFF00) >> 8) + (((x)&0xFF) << 8))
 
+// DateTime lib and conig for boot info
+#include "time.h"
+
 
 NimBLEScan* pBLEScan;
 
@@ -40,6 +43,41 @@ AsyncWebServer server(80);
 ADE7953 myADE7953;
 
 ENERGY Energy;
+
+
+// ------------------------ DateTime Configuration ------------------------
+
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 3600;
+const int   daylightOffset_sec = 3600;
+
+/*
+Area            HostName
+Worldwide	    pool.ntp.org
+Asia	        asia.pool.ntp.org
+Europe	        europe.pool.ntp.org
+North America	north-america.pool.ntp.org
+Oceania	        oceania.pool.ntp.org
+South America	south-america.pool.ntp.org
+
+%A	returns day of week
+%B	returns month of year
+%d	returns day of month
+%Y	returns year
+%H	returns hour
+%M	returns minutes
+%S	returns seconds
+*/
+
+
+// ------------------------ Information ------------------------
+
+struct INFO {
+  String bootTime;
+  String version = "V0.1.0";
+
+  String toString(){ return "{ \"BootTime\": \"" + bootTime + "\", \"Version\": \"" + version + "\" }"; }
+} Info;
 
 // ------------------------ Shelly Plus 2PM Cover as default config ------------------------
 
