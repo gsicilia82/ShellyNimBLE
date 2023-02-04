@@ -3,7 +3,7 @@
 Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core) als BLE Scanner zu verwenden. Es gibt favorisierte Projekte, wie espresense, die aber noch keine SingleCore ESP32 unterstützen.
 
 Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommunikation erfolgt über MQTT (optimiert für ioBroker).
-Das Scannen funktioniert für statische MAC-Adressen und iBeacon UUIDs.
+Mit der aktuellen Version können BLE Geräte über ihre MAC oder, wenn vorhanden, über ihre iBeacon UUID gescannt und gefiltert werden (Funktion als Whitelist). 
 
 * [ioBroker States Übersicht](#ioBroker-States-Übersicht)
 * [MQTT Konfiguration](#mqtt-konfiguration)
@@ -23,10 +23,9 @@ Das Scannen funktioniert für statische MAC-Adressen und iBeacon UUIDs.
 
 Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT Instanz läuft. Ich bevorzuge unter ioBroker den MQTT-Client, da ich Mosquitto als MQTT-Server verwende. Nachfolgend sind als Beispiel zwei Shellies zu sehen; ein ShellyPlus 2PM als COVER und ein ShellyPlus 1 als LIGHT:
 
-![ ](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
+![(muss nicht letztem Stand entsprechen)](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
 
-(muss nicht letztem Stand entsprechen)
-
+Im ioBroker State `mqtt-client.0.shellyscanner.devices.master.Filter` können bis zu 10 MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden.
 
 
 ## MQTT Konfiguration
@@ -35,7 +34,9 @@ Damit die States von ioBroker erkannt werden, muss unter der MQTT Instanz eine S
 
 ![ ](pictures/iobroker/010_iobroker_mqtt_subscriptions.png  "ioBroker MQTT")
 
-Nachdem der Flashprozess - wie in den nachfolgenden Kapiteln beschrieben - durchgeführt wurde, kann die Steuerung des Shelly über die automatisch erstellten ioBroker States erfolgen. Für ausgehende States muss "publish" aktiviert werden. Hier ein Beispiel für einen beliebigen State:
+Nach dem Flashprozess - beschrieben in nachfolgenden Kapiteln - kann die Steuerung des Shelly über die automatisch erstellten ioBroker States erfolgen. Für ausgehende States muss "publish" aktiviert werden. Hier ein Beispiel für einen beliebigen State:
+* Zunächst auf das Zahnradsymbol klicken
+* MQTT Instanz aufklappen und Checkbox publish aktivieren
 
 ![ ](pictures/iobroker/025_iobroker_publish_Zahnrad.png  "ioBroker publish1")
 ![ ](pictures/iobroker/030_iobroker_publish_config.png  "ioBroker publish2")
@@ -48,7 +49,7 @@ Dies sollte für alle, außer den nachfolgenden States erledigt werden:
 * Online (Anzeige des Online-Zustandes)
 * Switch1 und ggf. Switch2 (Anzeige ob Inputs am Shelly anliegen)
 
-Mit der aktuellen Version können BLE Geräte über ihre MAC oder, wenn vorhanden, über ihre iBeacon UUID gefiltert werden (Funktion als Whitelist). Im ioBroker State `mqtt-client.0.shellyscanner.devices.master.Filter` können bis zu 10 MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden.
+
 
 
 
