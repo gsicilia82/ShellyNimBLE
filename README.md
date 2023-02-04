@@ -47,6 +47,8 @@ Dies sollte für alle, außer den nachfolgenden States erledigt werden:
 * Online (Anzeige des Online-Zustandes)
 * Switch1 und ggf. Switch2 (Anzeige ob Inputs am Shelly anliegen)
 
+Für die einfache Konfiguration der States habe ich ein JavaScript für ioBroker erstellt, siehe weiter unter: [JavaScript für Optimierung der MQTT States](#JavaScript-f%C3%BCr-Optimierung-der-MQTT-States)
+
 ## Firmware Binaries unter Releases
 
 Zu jedem Release werden zwei Dateien hinzugefügt:
