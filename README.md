@@ -27,11 +27,13 @@ Im State `mqtt-client.0.shellyscanner.devices.*.Filter` können bis zu 10 MAC-Ad
 
 ## MQTT Konfiguration
 
+Es wird empfohlen, dass zunächst die ioBroker MQTT Instanz konfiguriert wird und anschließend das Flashen erfolgt.
+
 Damit die States von ioBroker erkannt werden, muss unter der MQTT Instanz eine Subscription auf `shellyscanner/#` eingestellt werden:
 
 ![ ](pictures/iobroker/010_iobroker_mqtt_subscriptions.png  "ioBroker MQTT")
 
-Nach dem Flashprozess - beschrieben in nachfolgenden Kapiteln - kann die Steuerung des Shelly über die automatisch erstellten ioBroker States erfolgen. Für ausgehende States muss "publish" aktiviert werden. Hier ein Beispiel für einen beliebigen State:
+**Nach** dem Flashprozess - beschrieben in nachfolgenden Kapiteln - kann die Steuerung des Shelly über die automatisch erstellten ioBroker States erfolgen. Für ausgehende States muss "publish" aktiviert werden. Hier ein Beispiel für einen beliebigen State:
 
 * Zunächst auf das Zahnradsymbol des States klicken
 * MQTT Instanz aufklappen und Checkbox publish aktivieren
@@ -39,7 +41,7 @@ Nach dem Flashprozess - beschrieben in nachfolgenden Kapiteln - kann die Steueru
 ![ ](pictures/iobroker/025_iobroker_publish_Zahnrad.png  "ioBroker publish1")
 ![ ](pictures/iobroker/030_iobroker_publish_config.png  "ioBroker publish2")
 
-Dies sollte für alle, außer den nachfolgenden States erledigt werden:
+Publish sollte für alle States, außer den nachfolgenden erledigt werden:
 
 * IP_Address (Zur Info, welche IP das Gerät hat)
 * Info (Boot-Zeit, FW-Version)
