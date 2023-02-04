@@ -267,13 +267,4 @@ stopScript();
 
 ## Changelog
 
-**Changelog 0.1.0 (04.02.2022)**
-
-- iBeacon als Filter Möglichkeit hinzugefügt
-- Auto-Kalibrierung für Rollläden
-- Leistungsmessung bei Shelly Plus 2PM
-- Sende Info Status
-
-**Changelog 0.0.1 (05.01.2022)**
-
-- Erstes Release
+Siehe unter [Releases]([Releases · gsicilia82/ShellyNimBLE · GitHub](https://github.com/gsicilia82/ShellyNimBLE/releases))
