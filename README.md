@@ -49,6 +49,8 @@ Dies sollte für alle, außer den nachfolgenden States erledigt werden:
 
 Für die einfache Konfiguration der States habe ich ein JavaScript für ioBroker erstellt, siehe weiter unter: [JavaScript für Optimierung der MQTT States](#JavaScript-f%C3%BCr-Optimierung-der-MQTT-States)
 
+Vor Anwendung des Skripts sollte zumindest geprüft werden, dass die MQTT Optionen - wie in den Screenshots zu sehen - vorhanden sind.
+
 ## Firmware Binaries unter Releases
 
 Zu jedem Release werden zwei Dateien hinzugefügt:
