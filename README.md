@@ -281,7 +281,14 @@ stopScript();
 
 ## Geplant
 
-* JavaScript erweitern: Lösche States unter "results" wenn zugehöriger Shelly unter "devices" nicht mehr existiert. Z.B. nach HardReset / Umbenennen eines Shelly.
+* [ ] ioBroker JavaScript erweitern: Lösche States unter "results" wenn zugehöriger Shelly unter "devices" nicht mehr existiert. Z.B. nach HardReset / Umbenennen eines Shelly.
+* [ ] Zeitpunkt der Ersteinrichtung über Info-State mitteilen.
+- [ ] COVER: Beim Anfahren der Endposition anhalten wenn Leistung abfällt.
+  Aktuell gelöst bei EndPosition "Berechnete Endzeit + 2s". Wenn nicht kalibriert, kein autom. Öffnen der Relais möglich.
+- [ ] COVER: ErrorHandling erweitern, wenn während Kalibriervorgang nie geringe Leistung erreicht wird.
+- [ ] Power Messintervall bei 500ms. Wert 100ms führt zu "task watchdog error". Optimierbar?
+- [ ] MaxPower für Relais einrichten. Über mqtt einstellbar (Persistent sichern).
+- [ ] Temperaturmessung hinzufügen? Öffne Relay wenn Temperatur X überschritten wurde?
 
 ---
 
