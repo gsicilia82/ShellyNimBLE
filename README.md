@@ -35,13 +35,15 @@ Damit die States von ioBroker erkannt werden, muss unter der MQTT Instanz eine S
 
 ![ ](pictures/iobroker/010_iobroker_mqtt_subscriptions.png  "ioBroker MQTT")
 
-Für die Steuerung des Shelly, muss publish (1) in ioBroker für ausgehend States aktiviert werden. Hier ein Beispiel:
+Nachdem der Flashprozess - wie in den nachfolgenden Kapiteln beschrieben - durchgeführt wurde, kann die Steuerung des Shelly über die automatisch erstellten ioBroker States erfolgen. Für ausgehende States muss "publish" aktiviert werden. Hier ein Beispiel für einen beliebigen State:
 
-![ ](pictures/iobroker/030_iobroker_publish_config.png  "ioBroker publish")
+![ ](pictures/iobroker/025_iobroker_publish_Zahnrad.png  "ioBroker publish1")
+![ ](pictures/iobroker/030_iobroker_publish_config.png  "ioBroker publish2")
 
-Dies sollte für alle, außer nachfolgende States erledigt werden:
+Dies sollte für alle, außer den nachfolgenden States erledigt werden:
 
 * IP_Address (Zur Info, welche IP das Gerät hat)
+* Info (Boot-Zeit, FW-Version)
 * Message (Empfang von zuätzlichen Informationen)
 * Online (Anzeige des Online-Zustandes)
 * Switch1 und ggf. Switch2 (Anzeige ob Inputs am Shelly anliegen)
