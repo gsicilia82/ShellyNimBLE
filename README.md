@@ -277,6 +277,10 @@ stopScript();
 
 * Wenn die Werte im State `mqtt-client.0.shellyscanner.devices.*.Filter` geändert werden, muss ein Neustart des Shelly erfolgen. Ich könnte den Neustart automatisieren, würde aber gern den Fehler beheben.
 
+## Geplant
+
+* JavaScript erweitern: Lösche States unter "results" wenn zugehöriger Shelly unter "devices" nicht mehr existiert. Z.B. nach HardReset / Umbenennen eines Shelly.
+
 ---
 
 ## Changelog
