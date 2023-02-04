@@ -17,16 +17,13 @@ Mit der aktuellen Version können BLE Geräte über ihre MAC oder, wenn vorhande
 * [JavaScript für Optimierung der MQTT States](#JavaScript-für-Optimierung-der-MQTT-States)
 * [Changelog](#Changelog)
 
-
-
 ## ioBroker States Übersicht
 
 Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT Instanz läuft. Ich bevorzuge unter ioBroker den MQTT-Client, da ich Mosquitto als MQTT-Server verwende. Nachfolgend sind als Beispiel zwei Shellies zu sehen; ein ShellyPlus 2PM als COVER und ein ShellyPlus 1 als LIGHT:
 
-![(muss nicht letztem Stand entsprechen)](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
+![](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
 
-Im ioBroker State `mqtt-client.0.shellyscanner.devices.master.Filter` können bis zu 10 MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden.
-
+Im State `mqtt-client.0.shellyscanner.devices.*.Filter` können bis zu 10 MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden. Außerdem können optional Aliase vergeben werden. Nach dem Flashprozess ist ein Beispiel im State hinterlegt.
 
 ## MQTT Konfiguration
 
@@ -35,6 +32,7 @@ Damit die States von ioBroker erkannt werden, muss unter der MQTT Instanz eine S
 ![ ](pictures/iobroker/010_iobroker_mqtt_subscriptions.png  "ioBroker MQTT")
 
 Nach dem Flashprozess - beschrieben in nachfolgenden Kapiteln - kann die Steuerung des Shelly über die automatisch erstellten ioBroker States erfolgen. Für ausgehende States muss "publish" aktiviert werden. Hier ein Beispiel für einen beliebigen State:
+
 * Zunächst auf das Zahnradsymbol klicken
 * MQTT Instanz aufklappen und Checkbox publish aktivieren
 
@@ -49,10 +47,6 @@ Dies sollte für alle, außer den nachfolgenden States erledigt werden:
 * Online (Anzeige des Online-Zustandes)
 * Switch1 und ggf. Switch2 (Anzeige ob Inputs am Shelly anliegen)
 
-
-
-
-
 ## Firmware Binaries unter Releases
 
 Zu jedem Release werden zwei Dateien hinzugefügt:
@@ -64,8 +58,6 @@ Zu jedem Release werden zwei Dateien hinzugefügt:
 Wenn **erstmalig** mit esptool geflasht wird, muss **firmware_full.bin** verwendet werden. Hier sind alle benötigten Partitionen vorhanden, weshalb diese Binary eine Größe von 4MB aufweist.
 
 Zukünftige **Updates** können über die **WebUI** des Shelly erfolgen. Es ist eine simple OTA Funktionalität integriert. Hier wird dann die **firmware_update.bin** verwendet, damit Einstellungen, wie die Konfiguration, Filter, WIFI etc. beibehalten werden.
-
-
 
 ## Erstmalig Flashen mit esptool
 
@@ -86,8 +78,6 @@ Hilfreiche Befehle sind zum Beispiel:
 * Schreiben des Flashspeichers:
   
    `esptool.py --baud 115200 write_flash 0x0 firmware_full.bin`
-
-
 
 ## Erstmalig Flashen mit PlatformIO
 
@@ -123,14 +113,10 @@ Mit PlatformIO kann auch direkt OTA geflasht werden. Für den OTA Upload muss di
 
 </details>
 
-
-
 ## OTA Flashen über Webportal
 
 Wenn auf dem Shelly diese Firmware über eine der oben beschriebenen Wege bereits geflasht wurde, kann über die IP des Shellys auf die Web OTA Funktion zugegriffen werden.
 Für den OTA Flashvorgang muss aus den Releases die `firmware_update.bin` verwendet werden. 
-
-
 
 ## Konfiguration des Shelly
 
@@ -150,13 +136,13 @@ Wenn der Shelly erfolgreich geflasht wurde, wird mit dem ersten boot ein AccessP
 
 Die bis hier angegebenen Daten können später nicht mehr geändert werden. Dies ist dann nur nach einem HardReset möglich (oder nach Erase-Flash und neu Flashen über PlatformIO o.ä.)
 
-Im Eingabebereich **Config** wird ein Konfigurationsprofil hinterlegt, je nachdem welches Shelly Modell verwendet wird. Wird hier keine gültige Config hinterlegt, wird automatisch "Shelly Plus 2PM v0.1.9" gewählt.
+Im Eingabebereich **Config** muss ein Konfigurationsprofil hinterlegt, je nachdem welches Shelly Modell verwendet wird. Wird hier keine gültige Config hinterlegt, wird automatisch "Shelly Plus 2PM v0.1.9" gewählt.
 
 Nachfolgend dargestellte Profile können aktuell eingesetzt werden. Einfach das passende kopieren und in den Config-Bereich eingeben.
 
 Diese Profile können auch später im Einsatz über MQTT angepasst werden. Es kann der Bedarf bestehen, dass die Eingangs- oder Ausgangs-Pins vertauscht werden; dies kann über diese Config geschehen.
 
-In ioBroker wird die Config z.B. über `mqtt-client.0.shellyscanner.devices.master.Config`dargestellt und kann auch hierüber angepasst werden.
+In ioBroker wird die Config z.B. über `mqtt-client.0.shellyscanner.devices.*.Config`dargestellt und kann auch hierüber angepasst werden.
 
 Für SwitchX_Mode sind folgende Inhalte möglich: Switch, Button, Detached.
 
@@ -210,8 +196,6 @@ Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Pl
 }
 ```
 
-
-
 ## Rollladen / COVER
 
 Für Rollläden kann über MQTT eine Kalibrierung gestartet werden. Solange keine Kalibrierung durchgeführt wurde, kann über die Taster hoch- und runtergefahren werden. Eine Positionsvorgabe kann nicht durchgeführt werden. 
@@ -220,15 +204,11 @@ Ein Rollladen kann über die drei States CoverUp, CoverDown und CoverStop gesteu
 
 Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software verriegelt.
 
-
-
 ## Reset-Taste am Shelly
 
 * Wird die Taste zwischen 0,2s und 10s betätigt, wird es neu gestartet
 
 * Wird die Taste länger als 10s betätigt, erfolgt ein HardReset. Hinterlegte Daten für WIFI und MQTT werden gelöscht. Das Gerät bootet nun in den AP-Mode.
-
-
 
 ## JavaScript für Optimierung der MQTT States
 
