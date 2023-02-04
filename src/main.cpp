@@ -1457,6 +1457,9 @@ void setup() {
         configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
         Info.bootTime = getLocalTime();
         pub( Topic.Info, Info.toString() );
+        delay(250);
+        // Send two times to get non-empty ioBroker entry
+        pub( Topic.Info, Info.toString() );
 
         // --------------------- Set different variables ---------------------
 
