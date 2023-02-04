@@ -82,7 +82,8 @@ Hilfreiche Befehle sind zum Beispiel:
 ## Erstmalig Flashen mit PlatformIO
 
 <details>
-  <summary>Expand for more Details</summary>
+  <summary>Für mehr Infos hier klicken</summary>
+  <br>
 
 PlatformIO ist ein Plugin, dass unter VSCode eingesetzt wird. Es ist zum Standard für größere Projekte geworden und bietet einige Vorteile gegenüber der Standard Arduino-IDE.
 
