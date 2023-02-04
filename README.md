@@ -6,7 +6,7 @@ Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Li
 Das Scannen funktioniert für statische MAC-Adressen und iBeacon UUIDs.
 
 * [ioBroker States Übersicht](#ioBroker-States-Übersicht)
-* [ioBroker States](#ioBroker-States)
+* [MQTT Konfiguration](#mqtt-konfiguration)
 * [Firmware Binaries unter Releases](#Firmware-Binaries-unter-Releases)
 * [Erstmalig Flashen mit esptool](#Erstmalig-Flashen-mit-esptool)
 * [Erstmalig Flashen mit PlatformIO](#Erstmalig-Flashen-mit-PlatformIO)
