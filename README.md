@@ -5,6 +5,7 @@ Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core
 Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommunikation erfolgt über MQTT (optimiert für ioBroker).
 Das Scannen funktioniert für statische MAC-Adressen und iBeacon UUIDs.
 
+* [ioBroker States Übersicht](#ioBroker-States-Übersicht)
 * [ioBroker States](#ioBroker-States)
 * [Firmware Binaries unter Releases](#Firmware-Binaries-unter-Releases)
 * [Erstmalig Flashen mit esptool](#Erstmalig-Flashen-mit-esptool)
@@ -16,13 +17,19 @@ Das Scannen funktioniert für statische MAC-Adressen und iBeacon UUIDs.
 * [JavaScript für Optimierung der MQTT States](#JavaScript-für-Optimierung-der-MQTT-States)
 * [Changelog](#Changelog)
 
-## ioBroker States
 
-Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT Instanz läuft. Ich bevorzuge unter ioBroker den MQTT-Client, da ich Mosquitto als MQTT-Server verwende. Wenn ein Shelly Plus 2PM als Cover eingerichtet wird, wären nachfolgend die ioBroker States zu sehen:
+
+## ioBroker States Übersicht
+
+Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT Instanz läuft. Ich bevorzuge unter ioBroker den MQTT-Client, da ich Mosquitto als MQTT-Server verwende. Nachfolgend sind als Beispiel zwei Shellies zu sehen; ein ShellyPlus 2PM als COVER und ein ShellyPlus 1 als LIGHT:
+
+![ ](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
 
 (muss nicht letztem Stand entsprechen)
 
-![ ](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
+
+
+## MQTT Konfiguration
 
 Damit die States von ioBroker erkannt werden, muss unter der MQTT Instanz eine Subscription auf `shellyscanner/#` eingestellt werden:
 
@@ -41,7 +48,7 @@ Dies sollte für alle, außer nachfolgende States erledigt werden:
 
 Mit der aktuellen Version können BLE Geräte über ihre MAC oder, wenn vorhanden, über ihre iBeacon UUID gefiltert werden (Funktion als Whitelist). Im ioBroker State `mqtt-client.0.shellyscanner.devices.master.Filter` können bis zu 10 MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden.
 
-***
+
 
 ## Firmware Binaries unter Releases
 
@@ -55,7 +62,7 @@ Wenn **erstmalig** mit esptool geflasht wird, muss **firmware_full.bin** verwend
 
 Zukünftige **Updates** können über die **WebUI** des Shelly erfolgen. Es ist eine simple OTA Funktionalität integriert. Hier wird dann die **firmware_update.bin** verwendet, damit Einstellungen, wie die Konfiguration, Filter, WIFI etc. beibehalten werden.
 
----
+
 
 ## Erstmalig Flashen mit esptool
 
@@ -77,7 +84,7 @@ Hilfreiche Befehle sind zum Beispiel:
   
    `esptool.py --baud 115200 write_flash 0x0 firmware_full.bin`
 
-***
+
 
 ## Erstmalig Flashen mit PlatformIO
 
@@ -113,14 +120,14 @@ Mit PlatformIO kann auch direkt OTA geflasht werden. Für den OTA Upload muss di
 
 </details>
 
-***
+
 
 ## OTA Flashen über Webportal
 
 Wenn auf dem Shelly diese Firmware über eine der oben beschriebenen Wege bereits geflasht wurde, kann über die IP des Shellys auf die Web OTA Funktion zugegriffen werden.
 Für den OTA Flashvorgang muss aus den Releases die `firmware_update.bin` verwendet werden. 
 
-***
+
 
 ## Konfiguration des Shelly
 
@@ -200,7 +207,7 @@ Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Pl
 }
 ```
 
----
+
 
 ## Rollladen / COVER
 
@@ -210,7 +217,7 @@ Ein Rollladen kann über die drei States CoverUp, CoverDown und CoverStop gesteu
 
 Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software verriegelt.
 
----
+
 
 ## Reset-Taste am Shelly
 
@@ -218,7 +225,7 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 
 * Wird die Taste länger als 10s betätigt, erfolgt ein HardReset. Hinterlegte Daten für WIFI und MQTT werden gelöscht. Das Gerät bootet nun in den AP-Mode.
 
----
+
 
 ## JavaScript für Optimierung der MQTT States
 
@@ -256,12 +263,12 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
         obj.common.write = true;
         obj.common.custom["mqtt-client.0"].publish = true;
     }
-    
+
     if ( getState( id).val == "true" || getState( id).val == "false"){
         // set boolean mode
         obj.common.type = "boolean";
     }
-    
+
     setObject( id, obj);
     if( lastItem=="Restart") cld( obj);
 });
@@ -279,8 +286,6 @@ stopScript();
 - Auto-Kalibrierung für Rollläden
 - Leistungsmessung bei Shelly Plus 2PM
 - Sende Info Status
-
-
 
 **Changelog 0.0.1 (05.01.2022)**
 
