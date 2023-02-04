@@ -230,7 +230,8 @@ let arrReadOnly = [
     "Power2",
     "PowerAcc",
     "Switch1",
-    "Switch2"
+    "Switch2",
+    "Info"
 ]
 
 $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
@@ -266,11 +267,14 @@ stopScript();
 
 ## Changelog
 
-**Changelog 0.1.0 (25.01.2022)**
+**Changelog 0.1.0 (04.02.2022)**
 
 - iBeacon als Filter Möglichkeit hinzugefügt
-- Auto-Kalibrierung für Rollläden 
-- Leistungsmessung bei Shelly Plus 2PM 
+- Auto-Kalibrierung für Rollläden
+- Leistungsmessung bei Shelly Plus 2PM
+- Sende Info Status
+
+
 
 **Changelog 0.0.1 (05.01.2022)**
 
