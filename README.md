@@ -218,7 +218,15 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 
 Wenn MQTT States von ioBroker automatisch generiert werden, sind diese grundsätzlich beschreibbar, publish ist deaktiviert. Ich habe ein kleines Skript geschrieben, dass die States gemäß den Anforderungen konfiguriert, wobei auch die State-Namen den Device-Namen als Präfix erhalten. Dafür muss das Skript in der ioBroker Skript-Engine einmalig ausgeführt werden. Es beendet sich selbst, wenn es durchlief ud muss nochmals gestartet werden, wenn später weitere Shellys hinzukommen.
 
-Dieses Skript funktioniert, wie hier hinterlegt, ausschließlich über die Instanz 0 vm MQTT-Client Adapter. Wenn andere Adapter verwendet werden, muss das Skript entsprechend angepasst werden.
+Dieses Skript funktioniert, wie hier hinterlegt, ausschließlich über die Instanz 0 vom MQTT-Client Adapter. Wenn andere Adapter verwendet werden, muss das Skript entsprechend angepasst werden.
+
+Eingerichtet wird:
+
+* State Typ auf "boolean" (wenn passend)
+
+* Aktiviere "publish"  wenn für Shelly Steuerung vorgesehen
+
+* State Attribut auf ReadOnly setzen (wenn passend)
 
 ```javascript
 let arrReadOnly = [
@@ -262,8 +270,6 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
 
 stopScript();
 ```
-
-
 
 ## Known Bugs
 
