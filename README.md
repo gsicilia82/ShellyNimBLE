@@ -267,4 +267,4 @@ stopScript();
 
 ## Changelog
 
-Siehe unter [Releases]([Releases · gsicilia82/ShellyNimBLE · GitHub](https://github.com/gsicilia82/ShellyNimBLE/releases))
+Siehe unter []([Releases · gsicilia82/ShellyNimBLE · GitHub](https://github.com/gsicilia82/ShellyNimBLE/releases))
