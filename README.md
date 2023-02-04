@@ -263,6 +263,14 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
 stopScript();
 ```
 
+
+
+## Known Bugs
+
+* Ein User hatte nach der erfolgten Erst-Konfiguration über das CaptivePortal ein Boot-Loop. Bisher konnte ich den Fehler weder nachstellen, noch beheben.
+
+* Wenn die Werte im State `mqtt-client.0.shellyscanner.devices.*.Filter` geändert werden, muss ein Neustart des Shelly erfolgen. Ich könnte den Neustart automatisieren, würde aber gern den Fehler beheben.
+
 ---
 
 ## Changelog
