@@ -81,6 +81,9 @@ Hilfreiche Befehle sind zum Beispiel:
 
 ## Erstmalig Flashen mit PlatformIO
 
+<details>
+  <summary>Expand for more Details</summary>
+
 PlatformIO ist ein Plugin, dass unter VSCode eingesetzt wird. Es ist zum Standard für größere Projekte geworden und bietet einige Vorteile gegenüber der Standard Arduino-IDE.
 
 Wenn VSCode installiert wurde, kann PlatformIO als Plugin installiert werden:
@@ -106,6 +109,8 @@ Das kompilieren und hochladen der Firmware erfolgt entweder mit angeschlossenem 
 Mit PlatformIO kann auch direkt OTA geflasht werden. Für den OTA Upload muss die platformio.ini aus dem Projekt geöffnet werden und in der entsprechenden Section die IP des Shellys angepasst werden.
 
 ![ ](pictures/vscode/050_vscode_pio_ota_direct.png  "pio build ota upload")
+
+</details>
 
 ***
 
