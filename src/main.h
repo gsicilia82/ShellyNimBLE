@@ -74,7 +74,7 @@ South America	south-america.pool.ntp.org
 
 struct INFO {
   String bootTime;
-  String version = "V0.1.1";
+  String version = "V0.1.2";
 
   String toString(){ return "{ \"BootTime\": \"" + bootTime + "\", \"Version\": \"" + version + "\" }"; }
 } Info;

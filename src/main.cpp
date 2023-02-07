@@ -1448,7 +1448,7 @@ void setup() {
         // --------------------- Start OTA function over WebServer ---------------------
 
         server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->redirect("/webserial");
+            request->redirect("/update");
         });
 
         AsyncElegantOTA.begin(&server);    // Start ElegantOTA on "/update"
