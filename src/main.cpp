@@ -47,7 +47,7 @@ bool pub(String topic, String payload, bool ignoreReceivings=false, uint8_t qos 
 
     if ( ignoreReceivings) {
         mqttIgnoreCounter++;
-        #ifdef DEBUG_MQTT
+        #ifdef VERBOSE_MQTT
             Serial.print( "MQTT, pub: " + topic);
             Serial.printf("| Ignore next <%d> incoming messages!\n", mqttIgnoreCounter);
         #endif
@@ -513,14 +513,14 @@ void setRelayLight( byte relay, bool state){
         Serial.println( "LIGHT: Set Relay 1 to: " + boolToString( state) );
         delay(100);
         pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false" , true);
-        if ( !state) pub( Topic.Power1, "0");
+        if ( !state && PinADE7953 != -1) pub( Topic.Power1, "0");
     }
     else if ( relay == 2){
         digitalWrite(PinRelay2, state);
         Serial.println( "LIGHT: Set Relay 2 to: " + boolToString( state) );
         delay(100);
         pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
-        if ( !state) pub( Topic.Power2, "0");
+        if ( !state && PinADE7953 != -1) pub( Topic.Power2, "0");
     }
     if ( digitalRead( PinRelay1) == LOW && digitalRead( PinRelay2) == LOW) pub( Topic.PowerAcc, "0");
 }
@@ -532,7 +532,7 @@ void toggleRelay( byte relay){
         state = digitalRead( PinRelay1) == HIGH;
         if ( PinADE7953 != -1) measEnergy = state; // enable/disable power measurement in loop()
         pub( Topic.RelaySet1, state ? "true" : "false" , true);
-        if ( !state) pub( Topic.Power1, "0");
+        if ( !state && PinADE7953 != -1) pub( Topic.Power1, "0");
     }
     else if ( relay == 2){
         digitalWrite(PinRelay2, !digitalRead(PinRelay2) );
@@ -541,7 +541,7 @@ void toggleRelay( byte relay){
         if ( PinADE7953 != -1) measEnergy = state; // enable/disable power measurement in loop()
         pub( Topic.RelaySet2, state ? "true" : "false" , true);
         pub( Topic.Power2, "0");
-        if ( !state) pub( Topic.Power2, "0");
+        if ( !state && PinADE7953 != -1) pub( Topic.Power2, "0");
     }
     if ( digitalRead( PinRelay1) == LOW && digitalRead( PinRelay2) == LOW) pub( Topic.PowerAcc, "0");
 }
@@ -756,10 +756,14 @@ void pubsubShelly() {
 
     mqttClient.subscribe(Topic.Config.c_str(), 1);
     mqttClient.subscribe(Topic.RelaySet1.c_str(), 1);
-    mqttClient.subscribe(Topic.RelaySet2.c_str(), 1);
-    mqttClient.subscribe(Topic.CoverPosSet.c_str(), 1);
-    mqttClient.subscribe(Topic.CoverStop.c_str(), 1);
-    mqttClient.subscribe(Topic.CoverCalib.c_str(), 1);
+
+    if ( PinRelay2 != -1 ) mqttClient.subscribe(Topic.RelaySet2.c_str(), 1);
+
+    if ( devMode == "COVER"){
+        mqttClient.subscribe(Topic.CoverPosSet.c_str(), 1);
+        mqttClient.subscribe(Topic.CoverStop.c_str(), 1);
+        mqttClient.subscribe(Topic.CoverCalib.c_str(), 1);
+    }
 }
 
 
@@ -1172,7 +1176,7 @@ void setupApServer(){
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
 
-    Serial.println("Disconnected from MQTT. Restarting ESP...");
+    Serial.println("Disconnected from MQTT. Restarting ...");
     ESP.restart();
 }
 
@@ -1198,6 +1202,7 @@ void WiFiEvent(WiFiEvent_t event) {
 
 
 void onMqttConnect( bool sessionPresent) {
+    Serial.println("Connected to MQTT.");
 	int mqttValidated = readInt( "mqttValidated", 0);
 	if ( mqttValidated == 0) writeInt( "mqttValidated", 1);
 }
@@ -1266,19 +1271,21 @@ void initNetwork(){
     // --------------------- Connect to MQTT ---------------------
 
     Serial.print( "Connecting to MQTT " + mqttServer + ":" + String(mqttPort) + "...");
-    mqttClient.onDisconnect( onMqttDisconnect);
 	mqttClient.onConnect( onMqttConnect);
     mqttClient.onMessage( onMqttMessage);
     mqttClient.setServer( mqttServer.c_str(), mqttPort);
     mqttClient.setWill( Topic.Online.c_str(), 1, true, "false");
-    mqttClient.setClientId( WiFi.localIP().toString().c_str() );
+    String locIP = String( WiFi.localIP() );
+    locIP.replace( ".", "");
+    mqttClient.setClientId(  locIP.c_str() );
     mqttClient.connect();
     timeout = 0;
     while ( !mqttClient.connected() ){
-        delay(500);
+        mqttClient.connect();
+        delay(2000);
         Serial.print(".");
         timeout++;
-        if  (timeout > 120){
+        if  (timeout > 60){
             Serial.println("");
             if ( mqttValidated == 1){
 				Serial.println("MQTT not reachable, restarting ESP32");
@@ -1292,6 +1299,7 @@ void initNetwork(){
 			}
         }
     }
+    mqttClient.onDisconnect( onMqttDisconnect);
     Serial.println();
     Serial.println("Connected to MQTT.");
 
