@@ -240,8 +240,7 @@ let arrReadOnly = [
     "Power2",
     "PowerAcc",
     "Switch1",
-    "Switch2",
-    "Info"
+    "Switch2"
 ]
 
 $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
@@ -260,14 +259,13 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
         obj.common.write = true;
         obj.common.custom["mqtt-client.0"].publish = true;
     }
-
+    
     if ( getState( id).val == "true" || getState( id).val == "false"){
         // set boolean mode
         obj.common.type = "boolean";
     }
-
+    
     setObject( id, obj);
-    if( lastItem=="Restart") cld( obj);
 });
 
 stopScript();
