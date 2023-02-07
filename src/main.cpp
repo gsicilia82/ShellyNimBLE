@@ -522,7 +522,7 @@ void setRelayLight( byte relay, bool state){
         pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false" , true);
         if ( !state && PinADE7953 != -1) pub( Topic.Power2, "0");
     }
-    if ( digitalRead( PinRelay1) == LOW && digitalRead( PinRelay2) == LOW) pub( Topic.PowerAcc, "0");
+    if ( digitalRead( PinRelay1) == LOW && digitalRead( PinRelay2) == LOW && PinADE7953 != -1) pub( Topic.PowerAcc, "0");
 }
 void toggleRelay( byte relay){
     bool state;
@@ -543,7 +543,7 @@ void toggleRelay( byte relay){
         pub( Topic.Power2, "0");
         if ( !state && PinADE7953 != -1) pub( Topic.Power2, "0");
     }
-    if ( digitalRead( PinRelay1) == LOW && digitalRead( PinRelay2) == LOW) pub( Topic.PowerAcc, "0");
+    if ( digitalRead( PinRelay1) == LOW && digitalRead( PinRelay2) == LOW && PinADE7953 != -1) pub( Topic.PowerAcc, "0");
 }
 
 
