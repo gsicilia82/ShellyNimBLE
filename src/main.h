@@ -72,6 +72,8 @@ South America	south-america.pool.ntp.org
 
 // ------------------------ Information ------------------------
 
+char firmware_char_array[] = AUTO_VERSION;
+
 struct INFO {
   String bootTime;
   String version = "V0.1.2";
