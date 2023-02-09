@@ -1,31 +1,57 @@
 # ShellyNimBLE
 
-Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core) als BLE Scanner zu verwenden. Es gibt tolle Projekte, wie espresense, die aber noch keine SingleCore ESP32 unterstützen.
+Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core) als BLE Scanner zu verwenden. Es gibt favorisierte Projekte, wie espresense, die aber noch keine SingleCore ESP32 unterstützen.
 
-Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommuikation erfolgt über MQTT (optimiert für ioBroker).
+Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommunikation erfolgt über MQTT (optimiert für ioBroker).
+Mit der aktuellen Version können BLE Geräte über ihre MAC oder, wenn vorhanden, über ihre iBeacon UUID gescannt und gefiltert werden (Funktion als Whitelist). 
 
-Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT Instanz läuft. Ich bevorzuge unter ioBroker den MQTT-Client, da ich Mosquitto als MQTT-Server verwende. Wenn ein Shelly Plus 2PM als Cover eingerichtet wird, wären nachfolgend die ioBroker States zu sehen:
+* [ioBroker States Übersicht](#ioBroker-States-Übersicht)
+* [MQTT Konfiguration](#mqtt-konfiguration)
+* [Firmware Binaries unter Releases](#Firmware-Binaries-unter-Releases)
+* [Erstmalig Flashen mit esptool](#Erstmalig-Flashen-mit-esptool)
+* [Erstmalig Flashen mit PlatformIO](#Erstmalig-Flashen-mit-PlatformIO)
+* [OTA Flashen über Webportal](#OTA-Flashen-über-Webportal)
+* [Konfiguration des Shelly](#Konfiguration-des-Shelly)
+* [Rollladen / COVER](#Rollladen-/-COVER)
+* [Reset-Taste am Shelly](#Reset-Taste-am-Shelly)
+* [JavaScript für Optimierung der MQTT States](#JavaScript-für-Optimierung-der-MQTT-States)
+* [Changelog](#Changelog)
 
-![ ](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
+## ioBroker States Übersicht
+
+Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT Instanz läuft. Ich bevorzuge unter ioBroker den MQTT-Client, da ich Mosquitto als MQTT-Server verwende. Nachfolgend sind als Beispiel zwei Shellies zu sehen; ein ShellyPlus 2PM als COVER und ein ShellyPlus 1 als LIGHT:
+
+![](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
+
+Im State `mqtt-client.0.shellyscanner.devices.*.Filter` können bis zu 10 MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden. Außerdem können optional Aliase vergeben werden. Nach dem Flashprozess ist ein Beispiel im State hinterlegt.
+
+## MQTT Konfiguration
+
+Es wird empfohlen, dass zunächst die ioBroker MQTT Instanz konfiguriert wird und anschließend das Flashen erfolgt.
 
 Damit die States von ioBroker erkannt werden, muss unter der MQTT Instanz eine Subscription auf `shellyscanner/#` eingestellt werden:
 
 ![ ](pictures/iobroker/010_iobroker_mqtt_subscriptions.png  "ioBroker MQTT")
 
-Für die Steuerung des Shelly, muss publish (1) in ioBroker für ausgehend States aktiviert werden. Hier ein Beispiel:
+**Nach** dem Flashprozess - beschrieben in nachfolgenden Kapiteln - kann die Steuerung des Shelly über die automatisch erstellten ioBroker States erfolgen. Für ausgehende States muss "publish" aktiviert werden. Hier ein Beispiel für einen beliebigen State:
 
-![ ](pictures/iobroker/030_iobroker_publish_config.png  "ioBroker publish")
+* Zunächst auf das Zahnradsymbol des States klicken
+* MQTT Instanz aufklappen und Checkbox publish aktivieren
 
-Dies sollte für alle, außer nachfolgende States erledigt werden:
+![ ](pictures/iobroker/025_iobroker_publish_Zahnrad.png  "ioBroker publish1")
+![ ](pictures/iobroker/030_iobroker_publish_config.png  "ioBroker publish2")
+
+Publish sollte für alle States, außer den nachfolgenden erledigt werden:
 
 * IP_Address (Zur Info, welche IP das Gerät hat)
+* Info (Boot-Zeit, FW-Version)
 * Message (Empfang von zuätzlichen Informationen)
 * Online (Anzeige des Online-Zustandes)
 * Switch1 und ggf. Switch2 (Anzeige ob Inputs am Shelly anliegen)
 
-Mit der aktuellen Version können nur BLE Geräte über ihre MAC gefiltert werden (Funktion als Whitelist). Im ioBroker State `mqtt-client.0.shellyscanner.devices.master.Filter` können bis zu 10 MAC Adressen eingegeben werden. Die MAC Adressen müssen über ein Komma getrennt werden.
+**Für die einfache Konfiguration der States habe ich ein JavaScript für ioBroker erstellt, siehe weiter unter:**  [JavaScript für Optimierung der MQTT States](#JavaScript-f%C3%BCr-Optimierung-der-MQTT-States)
 
-***
+**Vor Anwendung des Skripts sollte zumindest geprüft werden, dass die MQTT Optionen - wie in den Screenshots zu sehen - vorhanden sind.**
 
 ## Firmware Binaries unter Releases
 
@@ -35,13 +61,9 @@ Zu jedem Release werden zwei Dateien hinzugefügt:
 
 * firmware_update.bin
 
-
-
 Wenn **erstmalig** mit esptool geflasht wird, muss **firmware_full.bin** verwendet werden. Hier sind alle benötigten Partitionen vorhanden, weshalb diese Binary eine Größe von 4MB aufweist.
 
 Zukünftige **Updates** können über die **WebUI** des Shelly erfolgen. Es ist eine simple OTA Funktionalität integriert. Hier wird dann die **firmware_update.bin** verwendet, damit Einstellungen, wie die Konfiguration, Filter, WIFI etc. beibehalten werden.
-
----
 
 ## Erstmalig Flashen mit esptool
 
@@ -63,9 +85,11 @@ Hilfreiche Befehle sind zum Beispiel:
   
    `esptool.py --baud 115200 write_flash 0x0 firmware_full.bin`
 
-***
-
 ## Erstmalig Flashen mit PlatformIO
+
+<details>
+  <summary>Für mehr Infos hier klicken</summary>
+  <br>
 
 PlatformIO ist ein Plugin, dass unter VSCode eingesetzt wird. Es ist zum Standard für größere Projekte geworden und bietet einige Vorteile gegenüber der Standard Arduino-IDE.
 
@@ -93,13 +117,12 @@ Mit PlatformIO kann auch direkt OTA geflasht werden. Für den OTA Upload muss di
 
 ![ ](pictures/vscode/050_vscode_pio_ota_direct.png  "pio build ota upload")
 
-***
+</details>
 
-## OTA Flasen mit *.bin über Webportal
+## OTA Flashen über Webportal
 
-Wenn auf dem Shelly bereits diese Firmware geflasht wurde, kann über die IP des Shellys auf die Web OTA Funktion zugegriffen werden.
-
-***
+Wenn auf dem Shelly diese Firmware über eine der oben beschriebenen Wege bereits geflasht wurde, kann über die IP des Shellys auf die Web OTA Funktion zugegriffen werden.
+Für den OTA Flashvorgang muss aus den Releases die `firmware_update.bin` verwendet werden. 
 
 ## Konfiguration des Shelly
 
@@ -119,19 +142,19 @@ Wenn der Shelly erfolgreich geflasht wurde, wird mit dem ersten boot ein AccessP
 
 Die bis hier angegebenen Daten können später nicht mehr geändert werden. Dies ist dann nur nach einem HardReset möglich (oder nach Erase-Flash und neu Flashen über PlatformIO o.ä.)
 
-Im Eingabebereich **Config** wird ein Konfigurationsprofil hinterlegt, je nachdem welches Shelly Modell verwendet wird. Wird hier keine gültige Config hinterlegt, wird automatisch "Shelly Plus 2PM v0.1.9" gewählt.
+Im Eingabebereich **Config** muss ein Konfigurationsprofil hinterlegt, je nachdem welches Shelly Modell verwendet wird. Wird hier keine gültige Config hinterlegt, wird automatisch "Shelly Plus 2PM v0.1.9" gewählt.
 
 Nachfolgend dargestellte Profile können aktuell eingesetzt werden. Einfach das passende kopieren und in den Config-Bereich eingeben.
 
 Diese Profile können auch später im Einsatz über MQTT angepasst werden. Es kann der Bedarf bestehen, dass die Eingangs- oder Ausgangs-Pins vertauscht werden; dies kann über diese Config geschehen.
 
-In ioBroker wird die Config z.B. über `mqtt-client.0.shellyscanner.devices.master.Config`dargestellt und kann auch hierüber angepasst werden.
+In ioBroker wird die Config z.B. über `mqtt-client.0.shellyscanner.devices.*.Config`dargestellt und kann auch hierüber angepasst werden.
 
 Für SwitchX_Mode sind folgende Inhalte möglich: Switch, Button, Detached.
 
 Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Plus 2PM geladen.
 
-```
+```javascript
 {  
 "Config": "Shelly Plus 2PM v0.1.9",
 "ButtonReset": 4,
@@ -147,7 +170,7 @@ Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Pl
 }
 ```
 
-```
+```javascript
 {  
 "Config": "Shelly Plus 2PM v0.1.5",
 "ButtonReset": 27,
@@ -163,10 +186,10 @@ Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Pl
 }
 ```
 
-```
+```javascript
 {  
-"Config": "Shelly Plus 1PM v0.1.9",
-"ButtonReset": 27,
+"Config": "Shelly Plus 1(PM) v0.1.9",
+"ButtonReset": 25,
 "Switch1": 4,
 "Switch1_Mode": "Switch",
 "Switch2": -1,
@@ -179,19 +202,13 @@ Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Pl
 }
 ```
 
----
-
 ## Rollladen / COVER
 
-Für eine einfache Einrichtung sollte der Rollladen in voll geöffneter Stellung sein, wenn der Shelly eingebaut wird!
+Für Rollläden kann über MQTT eine Kalibrierung gestartet werden. Solange keine Kalibrierung durchgeführt wurde, kann über die Taster hoch- und runtergefahren werden. Eine Positionsvorgabe kann nicht durchgeführt werden. 
 
-Eine automatische Kalibrierung ist aktuell nicht möglich. Daher wird die Position eines Rollladen über die Zeit ermittelt. Die benötigte Zeit zwischen den beiden Endpositionen wird in ioBroker unter dem State `mqtt-client.0.shellyscanner.devices.master.SetMaxCoverTime` angegeben. Zeit manuell messen und hier angeben.
-
-Ein Rollladen kann über die drei States CoverUp, CoverDown und CoverStop gesteuert werden. Außerdem ist eine Sollvorgabe über SetPosition möglich.
+Ein Rollladen kann über die drei States CoverUp, CoverDown und CoverStop gesteuert werden. Außerdem ist nach erfolgter Kalibrierung eine Sollvorgabe über SetPosition möglich.
 
 Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software verriegelt.
-
----
 
 ## Reset-Taste am Shelly
 
@@ -199,22 +216,80 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 
 * Wird die Taste länger als 10s betätigt, erfolgt ein HardReset. Hinterlegte Daten für WIFI und MQTT werden gelöscht. Das Gerät bootet nun in den AP-Mode.
 
----
+## JavaScript für Optimierung der MQTT States
+
+Wenn MQTT States von ioBroker automatisch generiert werden, sind diese grundsätzlich beschreibbar, publish ist deaktiviert. Ich habe ein kleines Skript geschrieben, dass die States gemäß den Anforderungen konfiguriert, wobei auch die State-Namen den Device-Namen als Präfix erhalten. Dafür muss das Skript in der ioBroker Skript-Engine einmalig ausgeführt werden. Es beendet sich selbst, wenn es durchlief ud muss nochmals gestartet werden, wenn später weitere Shellys hinzukommen.
+
+Dieses Skript funktioniert, wie hier hinterlegt, ausschließlich über die Instanz 0 vom MQTT-Client Adapter. Wenn andere Adapter verwendet werden, muss das Skript entsprechend angepasst werden.
+
+Eingerichtet wird:
+
+* State Typ auf "boolean" (wenn passend)
+
+* Aktiviere "publish"  wenn für Shelly Steuerung vorgesehen
+
+* State Attribut auf ReadOnly setzen (wenn passend)
+
+```javascript
+let arrReadOnly = [
+    "CoverState",
+    "Message",
+    "Online",
+    "IP_Address",
+    "Power1",
+    "Power2",
+    "PowerAcc",
+    "Switch1",
+    "Switch2"
+]
+
+$('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
+    let splittedID = id.split(".");
+    let lastItem = splittedID.pop();
+    let deviceName = splittedID.pop();
+    let obj = getObject( id);
+    if ( !obj.common.name.includes( deviceName) ) obj.common.name = deviceName + " " + obj.common.name; // change name
+    if ( arrReadOnly.includes( lastItem) ){
+        // disable publish and write access
+        obj.common.write = false;
+        obj.common.custom["mqtt-client.0"].publish = false;
+    }
+    else {
+        // enable publish and write access
+        obj.common.write = true;
+        obj.common.custom["mqtt-client.0"].publish = true;
+    }
+    
+    if ( getState( id).val == "true" || getState( id).val == "false"){
+        // set boolean mode
+        obj.common.type = "boolean";
+    }
+    
+    setObject( id, obj);
+});
+
+stopScript();
+```
+
+## Known Bugs
+
+* Ein User hatte nach der erfolgten Erst-Konfiguration über das CaptivePortal ein Boot-Loop. Bisher konnte ich den Fehler weder nachstellen, noch beheben.
+
+* Wenn die Werte im State `mqtt-client.0.shellyscanner.devices.*.Filter` geändert werden, muss ein Neustart des Shelly erfolgen. Ich könnte den Neustart automatisieren, würde aber gern den Fehler beheben.
 
 ## Geplant
 
-* Powermessung für Shelly Plus 2PM über integriertem ADE7593
-
-* Automatische Kalibrierung der Rollladen über Powermessung
-
-* WebSerial zur Ausgabe von weiteren Informationen über die Website
-
-* Test ob OTA flash direkt auf Shelly Firmware funktioniert
+* [ ] ioBroker JavaScript erweitern: Lösche States unter "results" wenn zugehöriger Shelly unter "devices" nicht mehr existiert. Z.B. nach HardReset / Umbenennen eines Shelly.
+* [ ] Zeitpunkt der Ersteinrichtung über Info-State mitteilen.
+- [ ] COVER: Beim Anfahren der Endposition anhalten wenn Leistung abfällt.
+  Aktuell gelöst bei EndPosition "Berechnete Endzeit + 2s". Wenn nicht kalibriert, kein autom. Öffnen der Relais möglich.
+- [ ] COVER: ErrorHandling erweitern, wenn während Kalibriervorgang nie geringe Leistung erreicht wird.
+- [ ] Power Messintervall bei 500ms. Wert 100ms führt zu "task watchdog error". Optimierbar?
+- [ ] MaxPower für Relais einrichten. Über mqtt einstellbar (Persistent sichern).
+- [ ] Temperaturmessung hinzufügen? Öffne Relay wenn Temperatur X überschritten wurde?
 
 ---
 
 ## Changelog
 
-**Changelog 0.0.1 (05.01.2022)**
-
-- Erstes Release
+Siehe unter [Releases · gsicilia82/ShellyNimBLE · GitHub](https://github.com/gsicilia82/ShellyNimBLE/releases)

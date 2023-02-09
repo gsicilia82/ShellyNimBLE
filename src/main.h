@@ -26,6 +26,9 @@
 #define Sprintf(f, ...) ({ char* s; asprintf(&s, f, __VA_ARGS__); String r = s; free(s); r; })
 #define ENDIAN_CHANGE_U16(x) ((((x)&0xFF00) >> 8) + (((x)&0xFF) << 8))
 
+// DateTime lib and conig for boot info
+#include "time.h"
+
 
 NimBLEScan* pBLEScan;
 
@@ -41,6 +44,41 @@ ADE7953 myADE7953;
 
 ENERGY Energy;
 
+
+// ------------------------ DateTime Configuration ------------------------
+
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 3600;
+const int   daylightOffset_sec = 3600;
+
+/*
+Area            HostName
+Worldwide	    pool.ntp.org
+Asia	        asia.pool.ntp.org
+Europe	        europe.pool.ntp.org
+North America	north-america.pool.ntp.org
+Oceania	        oceania.pool.ntp.org
+South America	south-america.pool.ntp.org
+
+%A	returns day of week
+%B	returns month of year
+%d	returns day of month
+%Y	returns year
+%H	returns hour
+%M	returns minutes
+%S	returns seconds
+*/
+
+
+// ------------------------ Information ------------------------
+
+struct INFO {
+  String bootTime;
+  String version = "V0.1.2";
+
+  String toString(){ return "{ \"BootTime\": \"" + bootTime + "\", \"Version\": \"" + version + "\" }"; }
+} Info;
+
 // ------------------------ Shelly Plus 2PM Cover as default config ------------------------
 
 String devMode    = "";  // possible devMode: LIGHT or COVER, is set in init WebUI
@@ -49,9 +87,10 @@ String config = "{ \"Config\": \"Shelly Plus 2PM v0.1.9\", \"ButtonReset\": 4, \
 
 // ------------------------ BLE Filter config ------------------------
 
-String sFilterBle = "c1:e5:19:e6:bd:14,e2:46:43:e2:2d:21,745ed2ff-f9e8-4a93-a634-b733598c16f0-0-0";
+String sFilterBle = "c0:6d:62:e7:4e:7a=gts4mini,e2:46:43:e2:2d:21=brieftasche,745ed2ff-f9e8-4a93-a634-b733598c16f0-0-0=pixel7";
 
 std::vector<String> vecFilterBle;
+std::vector<String> vecFilterAlias;
 
 int arrRssi[10][3] = {
     { -150, -150, -150},
@@ -81,6 +120,7 @@ struct TOPIC {
     Config,
     Restart,
     HardReset,
+    Info,
     Switch1,
     Switch2,
     RelaySet1,
@@ -145,7 +185,7 @@ String switchMode1, switchMode2; // possible switchMode: BUTTON or SWITCH or DET
 
 unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOWN
 unsigned long coverTargetTime = 0; // Max time, when end position should be reached
-String coverDirection = "STOPPED";
+String coverDirection = "stopped";
 int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
 int coverPosition = 50;            // default value; real value from non-volatile memory
 
@@ -165,6 +205,7 @@ enum {
 };
 
 #ifdef DEBUG
+    // Used in Serial.print for debug purposes
     String CalibState[] = {
         "NOT_CALIBRATED",
         "RAISE_1ST_CHKPWR_0W",
@@ -186,6 +227,10 @@ unsigned long calibTimer1  = 0;
 unsigned long calibTimer2  = 0;
 unsigned long calibStepTimer = 0;
 bool isCalibWaiting = false;
+
+// Watt limits for calibration
+int limPowHigh = 40;
+int limPowLow = 15;
 
 // #########################
 // #########################
