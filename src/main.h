@@ -29,7 +29,9 @@
 // DateTime lib and conig for boot info
 #include "time.h"
 
-#define FIRMWARE_VERSION "0.1.2"
+#ifndef FIRMWARE_VERSION
+    #define FIRMWARE_VERSION "VersionNotSetInBuildFlags"
+#endif
 
 NimBLEScan* pBLEScan;
 
