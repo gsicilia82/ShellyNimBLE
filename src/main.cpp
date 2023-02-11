@@ -1331,8 +1331,12 @@ String getLocalTime(){
 
     struct tm timeinfo;
     if( !getLocalTime( &timeinfo)){
-        Serial.println("Failed to obtain time");
-        return "Error getting time";
+        Serial.println("Failed to obtain time (1st)!");
+        delay( 2000);
+        if( !getLocalTime( &timeinfo)){
+            Serial.println("Failed to obtain time (2nd)!");
+            return "Error-Getting-Time";
+        }
     }
     char timeStringBuff[50]; //50 chars should be enough
     strftime(timeStringBuff, sizeof(timeStringBuff), "%B %d %Y %H:%M", &timeinfo);
