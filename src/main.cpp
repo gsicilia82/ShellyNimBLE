@@ -1330,7 +1330,7 @@ void initMqttTopics(){
 String getLocalTime(){
 
     struct tm timeinfo;
-    if(!getLocalTime(&timeinfo)){
+    if( !getLocalTime( &timeinfo)){
         Serial.println("Failed to obtain time");
         return "Error getting time";
     }

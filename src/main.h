@@ -29,6 +29,7 @@
 // DateTime lib and conig for boot info
 #include "time.h"
 
+#define FIRMWARE_VERSION "0.1.2"
 
 NimBLEScan* pBLEScan;
 
@@ -72,13 +73,12 @@ South America	south-america.pool.ntp.org
 
 // ------------------------ Information ------------------------
 
-char firmware_char_array[] = AUTO_VERSION;
+//char firmware_char_array[] = AUTO_VERSION;
 
 struct INFO {
   String bootTime;
-  String version = "V0.1.2";
 
-  String toString(){ return "{ \"BootTime\": \"" + bootTime + "\", \"Version\": \"" + version + "\" }"; }
+  String toString(){ return "{ \"BootTime\": \"" + bootTime + "\", \"Version\": \"" + FIRMWARE_VERSION + "\" }"; }
 } Info;
 
 // ------------------------ Shelly Plus 2PM Cover as default config ------------------------
