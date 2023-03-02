@@ -174,7 +174,7 @@ const char captive_html[] PROGMEM = R"rawliteral(
             document.getElementById("rowInput1").style.display = "";
             document.getElementById("rowInput2").style.display = "none";
         }
-        else if ( value==="ShellyPlus-2PM_v0.1.9" || value==="ShellyPlus-2PM_v0.1.5"){
+        else if ( value==="ShellyPlus-2PM"){
         	document.getElementById("rowDeviceMode").style.display = "";
             document.getElementById("rowInput1").style.display = "";
             document.getElementById("rowInput2").style.display = "";
