@@ -1,151 +1,15 @@
 #include <main.h>
 
 
-// --------------------- HILFS-FUNKTIONEN ---------------------
 
-int median_of_3(int a, int b, int c){
 
-    int the_max = max(max(a, b), c);
-    int the_min = min(min(a, b), c);
-    // unnecessarily clever code
-    int the_median = the_max ^ the_min ^ a ^ b ^ c;
-    return (the_median);
-}
-
-template <size_t n> void push(int (&arr)[n], int const value) {
-  static size_t index = 0;
-
-  arr[index] = value;
-  index = (index + 1) % n;
-}
-
-template <size_t n> int pop(int (&arr)[n]) {
-  static size_t index = 0;
-
-  int result = arr[index];
-  index = (index + 1) % n;
-  return result;
-}
-
-template <size_t n> void roll(int (&arr)[n]) {
-  static size_t index = 0;
-
-  for (size_t i = 0; i < n; i++) {
-    Serial.print(arr[(index + i) % n]);
-    Serial.print(' ');
-  }
-  Serial.println();
-
-  index = (index + 1) % n;
-}
-
-String boolToString(bool b){ return b ? "true" : "false"; }
-
-bool stringToBool(String s){ return ( s == "true") ? true : false; }
-
-bool pub(String topic, String payload, bool ignoreReceivings=false, uint8_t qos = 0, bool retain = false, size_t length = 0, bool dup = false, uint16_t message_id = 0){
-
-    if ( ignoreReceivings) {
-        mqttIgnoreCounter++;
-        #ifdef VERBOSE_MQTT
-            Serial.print( "MQTT, pub: " + topic);
-            Serial.printf("| Ignore next <%d> incoming messages!\n", mqttIgnoreCounter);
-        #endif
-        mqttDisableTime = millis();
-        mqttDisabled = true;
-    }
-    for (int i = 0; i < 10; i++){
-        if ( mqttClient.publish(topic.c_str(), qos, retain, payload.c_str(), length, dup, message_id) ){
-            return true;
-        }
-        delay(25);
-    }
-    return false;
-
-}
-
-void report( String msg, bool withPub=true){
-    Serial.println( msg);
-    if ( withPub) pub( Topic.Message, msg);
-}
-
-void clearPreferences( const char* space="shelly"){
-    report( "Local memory cleared!");
-    preferences.begin( space, false);
-    preferences.clear();
-    preferences.end();
-}
-
-int readInt( const char* key, int defVal, const char* space="shelly"){
-    preferences.begin( space, false);
-    int tmp = preferences.getInt( key, defVal);
-    preferences.end();
-    return tmp;
-}
-
-void writeInt( const char* key, int value, const char* space="shelly"){
-    preferences.begin( space, false);
-    preferences.putInt( key, value);
-    preferences.end();
-}
-
-String readString( const char* key, String defVal, const char* space="shelly"){
-    preferences.begin( space, false);
-    String tmp = preferences.getString( key, defVal);
-    preferences.end();
-    return tmp;
-}
-
-void writeString( const char* key, String value, const char* space="shelly"){
-    preferences.begin( space, false);
-    preferences.putString( key, value);
-    preferences.end();
-}
-
-void restartDevice(){
-    report("Restarting device in 1s ...");
-    delay(1000);
-    ESP.restart();
-}
-
-bool getRelayState ( int relay){
-    if      ( relay == 1) return ( ( digitalRead( PinRelay1) == HIGH) ? true : false );
-    else if ( relay == 2) return ( ( digitalRead( PinRelay2) == HIGH) ? true : false );
-    else return true; // for security reasons
-}
 
 /*
-###############################################################################################################################
-###############################################################################################################################
-###############################################################################################################################
-###############################################################################################################################
-###############################################################################################################################
-*/
 
-ENERGY getFakePower(){
-
-    ENERGY Fake;
-
-    if ( coverDirection != "stopped"){
-        
-        float pwr = (millis() - coverStartTime)/100;
-        if ( pwr > 200) pwr = 0;
-        Fake.powerAcc = pwr;
-    }
-    else Fake.powerAcc = 0;
-
-    return Fake;
-}
-
-/*
-###############################################################################################################################
-###############################################################################################################################
-###############################################################################################################################
-###############################################################################################################################
-###############################################################################################################################
-*/
 
 bool convertJsonToConfig( String& config, bool withPub=true){
+
+    StaticJsonDocument<400> doc; // Needed for JSON config over mqtt
 
     DeserializationError error = deserializeJson(doc, config.c_str() );
 
@@ -704,72 +568,28 @@ bool MqttCommandShelly(String& topic, String& pay) {
 
 }
 
-
-void initMqttTopicsShelly(){
-
-    Topic.Switch1     = Topic.Device + "/Switch1";
-    Topic.Switch2     = Topic.Device + "/Switch2";
-    Topic.RelaySet1   = Topic.Device + "/SetRelay1"; // Will be changed in case of COVER
-    Topic.RelaySet2   = Topic.Device + "/SetRelay2"; // Will be changed in case of COVER
-
-    Topic.CoverPosSet = Topic.Device + "/CoverSetPosition";
-    Topic.CoverStop   = Topic.Device + "/CoverStop";
-    Topic.CoverCalib  = Topic.Device + "/CoverStartCalibration";
-    Topic.CoverState  = Topic.Device + "/CoverState";
-
-    if ( PinADE7953 != -1){
-    Topic.Power1    = Topic.Device + "/Power1";
-    Topic.Power2    = Topic.Device + "/Power2";
-    Topic.PowerAcc  = Topic.Device + "/PowerAcc";
-    }
-}
+*/
 
 
-void pubsubShelly() {
 
-    for (int i = 0; i < 2; i++) {
-
-        pub( Topic.Config, config);
-        pub( Topic.Switch1, ( digitalRead( PinSwitch1) == HIGH) ? "true" : "false");
-        pub( Topic.RelaySet1, ( digitalRead( PinRelay1) == HIGH) ? "true" : "false");
-
-        if ( PinSwitch2 != -1 && PinRelay2 != -1 ){
-            pub( Topic.Switch2, ( digitalRead( PinSwitch2) == HIGH) ? "true" : "false" );
-            pub( Topic.RelaySet2, ( digitalRead( PinRelay2) == HIGH) ? "true" : "false");
-        }
-
-        if ( PinADE7953 != -1 ){
-            pub( Topic.Power1   , "0");
-            pub( Topic.Power2   , "0");
-            pub( Topic.PowerAcc , "0");
-        }
-
-        if ( devMode == "COVER"){
-
-            pub( Topic.CoverPosSet, String( coverPosition) );
-            pub( Topic.CoverStop, "false");
-            pub( Topic.CoverCalib, "false");
-            pub( Topic.CoverState, "stopped");
-        }
-        if( i==0) delay(500);
-    }
-
-    mqttClient.subscribe(Topic.Config.c_str(), 1);
-    mqttClient.subscribe(Topic.RelaySet1.c_str(), 1);
-
-    if ( PinRelay2 != -1 ) mqttClient.subscribe(Topic.RelaySet2.c_str(), 1);
-
-    if ( devMode == "COVER"){
-        mqttClient.subscribe(Topic.CoverPosSet.c_str(), 1);
-        mqttClient.subscribe(Topic.CoverStop.c_str(), 1);
-        mqttClient.subscribe(Topic.CoverCalib.c_str(), 1);
-    }
-}
 
 
 void SetupShelly() {
 
+    Shelly2PM specificShelly;
 
+    shelly = &specificShelly;
+
+    shelly->setup();
+
+    shelly->initMqttTopics();
+
+    shelly->initPubSub();
+
+    // Initialize Shelly device
+
+
+/*
     // --------------------- Read config from non-volatile memory ---------------------
 
     config = readString( "config", config);
@@ -854,13 +674,14 @@ void SetupShelly() {
             Serial.println(">>> Init Shelly ADE7953 done.");
         #endif
     }
-
+*/
 }
 
 
 
 void LoopShelly() {
 
+/*/
     // --------------------- Check switch entries ---------------------
 
     loopCheckSw1();
@@ -873,7 +694,6 @@ void LoopShelly() {
     if ( measEnergy && millis() - lastSlowLoop > measIntervall){ // Intervall = 100 if COVER else 5000
         
         Energy = myADE7953.getData();
-        //Energy = getFakePower();
 
         #ifdef DEBUG
             pub( Topic.dbg+"voltage0", String( Energy.voltage[0] ) );
@@ -907,17 +727,46 @@ void LoopShelly() {
     // --------------------- Time measurement for long press Reset button ---------------------
 
     if ( flagLongPress) switchTimeLongPressR = millis() - switchLastTimeR;
-
+*/
 
 }
 
-/*
-###############################################################################################################################
-###############################################################################################################################
-###############################################################################################################################
-###############################################################################################################################
-###############################################################################################################################
-*/
+
+int median_of_3(int a, int b, int c){
+
+    int the_max = max(max(a, b), c);
+    int the_min = min(min(a, b), c);
+    // unnecessarily clever code
+    int the_median = the_max ^ the_min ^ a ^ b ^ c;
+    return (the_median);
+}
+
+template <size_t n> void push(int (&arr)[n], int const value) {
+  static size_t index = 0;
+
+  arr[index] = value;
+  index = (index + 1) % n;
+}
+
+template <size_t n> int pop(int (&arr)[n]) {
+  static size_t index = 0;
+
+  int result = arr[index];
+  index = (index + 1) % n;
+  return result;
+}
+
+template <size_t n> void roll(int (&arr)[n]) {
+  static size_t index = 0;
+
+  for (size_t i = 0; i < n; i++) {
+    Serial.print(arr[(index + i) % n]);
+    Serial.print(' ');
+  }
+  Serial.println();
+
+  index = (index + 1) % n;
+}
 
 void filterStringToVector(){
 
@@ -962,15 +811,15 @@ void filterStringToVector(){
     #endif
 }
 
-void pubsubMain() {
+void initPubSub() {
 
     for (int i = 0; i < 2; i++) {
         pub( Topic.Online, "true");
         pub( Topic.Ip, WiFi.localIP().toString() );
         pub( Topic.Restart, "false");
         pub( Topic.HardReset, "false");
-        pub( Topic.Message, "Ready");
         pub( Topic.Filter, sFilterBle);
+        pub( TopicGlobal.Message, "Ready");
         if( i==0) delay(500);
     }
         mqttClient.subscribe( Topic.Restart.c_str(), 1);
@@ -1014,8 +863,9 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
         report( "New filter activated");
         writeString( "sFilterBle", sFilterBle);
     }
-    else if ( MqttCommandShelly( top, pay))
+/*    else if ( MqttCommandShelly( top, pay))
         ;
+*/
     else Serial.println("MQTT unknown: " + top + " | " + pay);
 
 }
@@ -1052,7 +902,7 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
                 push( arrRssi[pos], rssi);
                 String topic = Topic.Results + "/" + vecFilterAlias[i] + "/" + deviceName;
                 int median = median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] );
-                pub( topic, String(  median) );
+                pubFast( topic, String(  median) );
                 #ifdef DEBUG_MQTT
                     Serial.printf("Advertising device to topic: %s with RSSI: %d \n", topic.c_str(), median);
                 #endif
@@ -1090,16 +940,13 @@ void setupApServer(){
 	server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) {
 		String inputMessage;
 
-		String ssid;
-		String pass;
-		String server;
-		String port;
-		String name;
-		String mode;
+		String ssid, pass, server, port, name, model, mode, input1, input2;
+        int intPort = 0;
 
 		int receivedParams = 0;
-		int intPort = 0;
-	
+
+        Serial.println( "Received Parameters including default values:");
+		
 		if (request->hasParam( "ssid")) {
 			ssid = request->getParam( "ssid")->value();
 			ssid.replace(" ", "");
@@ -1141,26 +988,36 @@ void setupApServer(){
 			writeString( "name", name);
 			if ( name.length() > 0 ) receivedParams++;
 		}
-		if (request->hasParam( "mode")) {
-			mode = request->getParam( "mode")->value();
+		if (request->hasParam( "SelectModel")) {
+			model = request->getParam( "SelectModel")->value();
+			model.replace(" ", "");
+			Serial.print( "Received Device Model: ");
+			Serial.println( model);
+			writeString( "model", model);
+		}
+        if (request->hasParam( "deviceMode")) {
+			mode = request->getParam( "deviceMode")->value();
 			mode.replace(" ", "");
 			Serial.print( "Received Device Mode: ");
 			Serial.println( mode);
 			writeString( "mode", mode);
-			if ( mode.length() > 0 ) receivedParams++;
 		}
-        if (request->hasParam( "config")) {
-			config = request->getParam( "config")->value();
-			config.replace(" ", "");
-			Serial.print( "Received Device Config: ");
-			Serial.println( config);
-			bool convertOk = convertJsonToConfig( config, false);
-            if ( convertOk) writeString( "config", config);
-            else Serial.println( "Received Config is not ok. Starting with default config (Shelly Plus 2PM v0.1.9)...");
-			if ( config.length() > 0 ) receivedParams++;
+        if (request->hasParam( "input1")) {
+			input1 = request->getParam( "input1")->value();
+			input1.replace(" ", "");
+			Serial.print( "Received Input1 Mode: ");
+			Serial.println( input1);
+			writeString( "input1", input1);
+		}
+        if (request->hasParam( "input2")) {
+			input2 = request->getParam( "input2")->value();
+			input2.replace(" ", "");
+			Serial.print( "Received Input2 Mode: ");
+			Serial.println( input2);
+			writeString( "input2", input2);
 		}
 
-		if ( receivedParams == 7){
+		if ( receivedParams == 5){
 			request->send(200, "text/plain", "All parameters received. ESP will restart and connect to your Wifi ...");
 			delay(3000);
 			ESP.restart();
@@ -1229,10 +1086,10 @@ void initCaptivePortal(){
 
 void initNetwork(){
 
-	String wifiSSID = readString( "ssid", "");
-	String wifiPass = readString( "pass", "");
+	String wifiSSID   = readString( "ssid", "");
+	String wifiPass   = readString( "pass", "");
 	String mqttServer = readString( "server", "");
-	int mqttPort = readInt( "port", 0);
+	int mqttPort      = readInt( "port", 0);
 
 	if ( wifiSSID == "" || wifiPass == "" || mqttServer == "" || mqttPort == 0){
 		initCaptivePortal();
@@ -1306,23 +1163,23 @@ void initNetwork(){
 }
 
 
+void initMqttTopicsGlobal(){
+    TopicGlobal.Main    = "shellyscanner"; // mqtt main topic
+    TopicGlobal.Device  = TopicGlobal.Main + "/devices/" + deviceName;
+    TopicGlobal.dbg     = TopicGlobal.Device + "/Debug/Dbg_";
+    TopicGlobal.Message = TopicGlobal.Device + "/Message";
+}
+
 void initMqttTopics(){
+    Topic.Online    = TopicGlobal.Device + "/Online";
+    Topic.Ip        = TopicGlobal.Device + "/IP_Address";
+    Topic.Restart   = TopicGlobal.Device + "/Restart";
+    Topic.HardReset = TopicGlobal.Device + "/HardReset";
+    Topic.Filter    = TopicGlobal.Device + "/Filter";
+    Topic.Info      = TopicGlobal.Device + "/Info";
 
-    // global definde in main.h
-    Topic.Main    = "shellyscanner"; // mqtt main topic
-    Topic.Device  = Topic.Main + "/devices/" + deviceName;
-    Topic.Results = Topic.Main + "/results";
-
-    Topic.Message    = Topic.Device + "/Message";
-    Topic.Online     = Topic.Device + "/Online";
-    Topic.Ip         = Topic.Device + "/IP_Address";
-    Topic.Config     = Topic.Device + "/Config";
-    Topic.Restart    = Topic.Device + "/Restart";
-    Topic.HardReset  = Topic.Device + "/HardReset";
-    Topic.Filter     = Topic.Device + "/Filter";
-    Topic.Info     = Topic.Device + "/Info";
-
-    Topic.dbg = Topic.Device + "/Debug/Dbg_";
+    Topic.Results   = TopicGlobal.Main + "/results";
+    
 }
 
 
@@ -1352,16 +1209,17 @@ void setup() {
 
     // --------------------- Init Main ---------------------
 
-    devMode = readString( "mode", "");
-    deviceName = readString( "name", "");
-    if ( devMode == "" || deviceName == ""){
-        Serial.println( "devMode or deviceName is empty, starting CaptivaPortal");
+    deviceName  = readString( "name", "");
+    deviceModel = readString( "model", "");
+    if ( deviceName == "" || deviceModel == ""){
+        Serial.println( "device model or device name is empty, starting CaptivaPortal");
         initCaptivePortal();
     }
     else {
 
         // --------------------- Init MQTT Topics ---------------------
 
+        initMqttTopicsGlobal();
         initMqttTopics();
 
         #ifdef DEBUG
@@ -1387,18 +1245,12 @@ void setup() {
 
         // --------------------- Publish init state ---------------------
 
-        pubsubMain();
+        initPubSub();
+
+        mqttIgnoreCounter = 0;
 
         #ifdef DEBUG
             Serial.println(">>> Init 1st publish of states done.");
-        #endif
-
-        // --------------------- Setup external devices ---------------------
-
-        SetupShelly();
-
-        #ifdef DEBUG
-            Serial.println(">>> Init Shelly done.");
         #endif
 
         // --------------------- Scanner process ---------------------
@@ -1468,14 +1320,19 @@ void setup() {
 
         configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
         Info.bootTime = getLocalTime();
+        Info.model = deviceModel;
         pub( Topic.Info, Info.toString() );
         delay(250);
         // Send two times to get non-empty ioBroker entry
         pub( Topic.Info, Info.toString() );
+        
+        // --------------------- Setup Shelly ---------------------
 
-        // --------------------- Set different variables ---------------------
+        SetupShelly();
 
-        mqttIgnoreCounter = 0;
+        #ifdef DEBUG
+            Serial.println(">>> Init Shelly done.");
+        #endif
 
     }
 
@@ -1498,9 +1355,6 @@ void loop() {
             pBLEScan->start(0, nullptr, false);
         }
 
-        // --------------------- Loop external libs ---------------------
-
-        LoopShelly();
 
         // --------------------- OTA handler ---------------------
 
@@ -1515,6 +1369,10 @@ void loop() {
                 Serial.println("MQTT commandhandler enabled again!");
             #endif
         }
+
+        // --------------------- Loop Shelly ---------------------
+
+        LoopShelly();
 
     }
 

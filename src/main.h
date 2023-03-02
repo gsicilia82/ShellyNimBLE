@@ -1,10 +1,6 @@
-
 #include <Arduino.h>
 #include <WiFi.h>
 #include <NimBLEDevice.h>
-#include <AsyncMqttClient.h>
-#include <Preferences.h>
-#include <ArduinoJson.h>
 
 // OTA dependencies
 #include <ESPmDNS.h>
@@ -18,8 +14,10 @@
 #include <DNSServer.h>
 #include <html.h>
 
-// Powermeter
-#include <ADE7953.h>
+// Custom libs
+#include <Shelly.h>
+#include <globals.h>
+
 
 // iBeacon
 #include <NimBLEBeacon.h>
@@ -31,22 +29,28 @@
 
 #ifndef FIRMWARE_VERSION
     #define FIRMWARE_VERSION "VersionNotSetInBuildFlags"
+    #warning FIRMWARE_VERSION was not set in build flags!
 #endif
 
 NimBLEScan* pBLEScan;
-
-AsyncMqttClient mqttClient;
-
-Preferences preferences;
 
 DNSServer dnsServer;
 
 AsyncWebServer server(80);
 
-ADE7953 myADE7953;
+Shelly *shelly;
 
-ENERGY Energy;
 
+// ------------------------ Predefined in globals ------------------------
+
+AsyncMqttClient mqttClient;
+Preferences preferences;
+String deviceName;
+
+int mqttIgnoreCounter = 0;
+unsigned long mqttDisableTime = 0;
+bool mqttDisabled = false;
+TOPIC_GLOBAL TopicGlobal;
 
 // ------------------------ DateTime Configuration ------------------------
 
@@ -78,16 +82,11 @@ South America	south-america.pool.ntp.org
 //char firmware_char_array[] = AUTO_VERSION;
 
 struct INFO {
-  String bootTime;
-
-  String toString(){ return "{ \"BootTime\": \"" + bootTime + "\", \"Version\": \"" + FIRMWARE_VERSION + "\" }"; }
+    String bootTime;
+    String model;
+    String toString(){ return "{ \"BootTime\": \"" + bootTime + "\", \"Version\": \"" + FIRMWARE_VERSION + "\", \"Model\": \"" + model + "\" }"; }
 } Info;
 
-// ------------------------ Shelly Plus 2PM Cover as default config ------------------------
-
-String devMode    = "";  // possible devMode: LIGHT or COVER, is set in init WebUI
-
-String config = "{ \"Config\": \"Shelly Plus 2PM v0.1.9\", \"ButtonReset\": 4, \"Switch1\": 5, \"Switch1_Mode\": \"Switch\", \"Switch2\": 18, \"Switch2_Mode\": \"Switch\", \"Relay1\": 13, \"Relay2\": 12, \"I2C_SCL\": 25, \"I2C_SDA\": 26, \"ADE7953\": 27, \"Temperature\": 35 }";
 
 // ------------------------ BLE Filter config ------------------------
 
@@ -110,57 +109,65 @@ int arrRssi[10][3] = {
 };
 
 // ------------------------ MQTT variables ------------------------
-String deviceName;
-
-struct TOPIC {
-    String dbg,
-    Main,
-    Filter,
-    Device,
+struct TOPIC_MAIN {
+    String Filter,
     Results,
-    Message,
     Online,
     Ip,
     Config,
     Restart,
     HardReset,
-    Info,
-    Switch1,
-    Switch2,
-    RelaySet1,
-    RelaySet2,
-    CoverState,
-    CoverPosSet,
-    CoverStop,
-    CoverCalib,
-    Power1,
-    Power2,
-    PowerAcc;
-    
+    Info;
 } Topic;
 
-// ##########################################################################
-// ------------------------ Device related variables ------------------------
-// ##########################################################################
 
 bool wifiWasConnected = false;
 bool captivePortalActivated = false;
 
-// helper to temp. ignore arriving MQTT mesages
-int mqttIgnoreCounter = 0;
-unsigned long mqttDisableTime = 0;
-bool mqttDisabled = false;
+String deviceModel = "";
+
 
 // ##########################################################################
 // ------------------------ Shelly related variables ------------------------
 // ##########################################################################
 
-StaticJsonDocument<400> doc; // Needed for JSON config over mqtt
+struct SHELLYP_2PM015 {
+    int ButtonReset = 27;
+    std::vector<int> Switch{ 2, 18 };
+    std::vector<int> Relay{ 13, 12 };
+    int I2C_SCL = 25;
+    int I2C_SDA = 33;
+    int ADE7953 = 36;
+    int Temperature = 37;
 
-uint debounce = 100; // debounce switch input in ms
+    std::vector<String> SwitchMode{ "Switch", "Switch" };
+    String Config = "{ \"Switch1_Mode\": \"Switch\", \"Switch2_Mode\": \"Switch\", \"SwapInput\": false, \"SwapOutput\": false ";
+};
 
-bool measEnergy = false;
-int measIntervall;
+struct SHELLYP_1 {
+    int ButtonReset = 25;
+    std::vector<int> Switch{ 4 };
+    std::vector<int> Relay{ 26 };
+    int Relay1 = 26;
+    int Temperature = 32;
+
+    std::vector<String> SwitchMode{ "Switch" };
+    String Config = "{ \"Switch1_Mode\": \"Switch\" ";
+};
+
+struct SHELLYP_I4 {
+    int ButtonReset = -1;
+    std::vector<int> Switch{ 12, 14, 27, 26 };
+    std::vector<int> Relay;
+
+    std::vector<String> SwitchMode{ "Detached", "Detached", "Detached", "Detached" };
+    String Config = "{ \"Config\": \"ShellyPlus-i4\" ";
+};
+
+
+
+
+
 
 //variables to keep track of the timing of recent changes from switches(=debounce)
 unsigned long switchTime1 = 0;
@@ -183,58 +190,4 @@ int PinSwitchR, PinSwitch1, PinSwitch2, PinRelay1, PinRelay2, PinSCL, PinSDA, Pi
 String switchMode1, switchMode2; // possible switchMode: BUTTON or SWITCH or DETACHED
 
 
-// ##########################
-// Needed only in COVER mode
-// ##########################
 
-unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOWN
-unsigned long coverTargetTime = 0; // Max time, when end position should be reached
-String coverDirection = "stopped";
-int coverMaxTime  = 100;           // cnfigured over MQTT and saved in non-volatile memory
-int coverPosition = 50;            // default value; real value from non-volatile memory
-
-enum {
-    NOT_CALIBRATED,
-    RAISE_1ST_CHKPWR_0W,
-    UP_REACHED_1ST,
-    LOWER,
-    LOWER_CHKPWR_20W,
-    LOWER_CHKPWR_0W,
-    DOWN_REACHED,
-    RAISE_2ND,
-    RAISE_2ND_CHKPWR_20W,
-    RAISE_2ND_CHKPWR_0W,
-    UP_REACHED_2ND,
-    CALIBRATED
-};
-
-#ifdef DEBUG
-    // Used in Serial.print for debug purposes
-    String CalibState[] = {
-        "NOT_CALIBRATED",
-        "RAISE_1ST_CHKPWR_0W",
-        "UP_REACHED_1ST",
-        "LOWER",
-        "LOWER_CHKPWR_20W",
-        "LOWER_CHKPWR_0W",
-        "DOWN_REACHED",
-        "RAISE_2ND",
-        "RAISE_2ND_CHKPWR_20W",
-        "RAISE_2ND_CHKPWR_0W",
-        "UP_REACHED_2ND",
-        "CALIBRATED"
-    };
-#endif
-
-int coverCalibState = NOT_CALIBRATED;
-unsigned long calibTimer1  = 0;
-unsigned long calibTimer2  = 0;
-unsigned long calibStepTimer = 0;
-bool isCalibWaiting = false;
-
-// Watt limits for calibration
-int limPowHigh = 40;
-int limPowLow = 15;
-
-// #########################
-// #########################
