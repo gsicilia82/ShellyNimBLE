@@ -39,6 +39,7 @@ DNSServer dnsServer;
 AsyncWebServer server(80);
 
 Shelly *shelly;
+Shelly2PM shelly2pm;
 
 
 // ------------------------ Predefined in globals ------------------------

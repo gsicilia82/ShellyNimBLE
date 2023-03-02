@@ -14,8 +14,8 @@ class Shelly {
 
     protected:
         struct TOPICS {
-            std::vector<String> Input;
-            std::vector<String> Relay;
+            std::vector<String> Input{};
+            std::vector<String> Relay{};
 
             String UserConfig,
             CoverState,
@@ -43,12 +43,14 @@ class Shelly {
         bool getRelayState( int relay);
         uint debounce = 100; // debounce switch input in ms
 
+        virtual void initMqttTopics();
+        virtual void initPubSub();
+
     public:
         Shelly();
         virtual void setup() = 0;
-        virtual void initMqttTopics();
-        virtual void initPubSub();
-        virtual void loop() = 0;
+        virtual void loop();
+        virtual bool parseJsonUserConfig() = 0;
 };
 
 
@@ -109,9 +111,9 @@ class Shelly2PM : public Shelly{
             CALIBRATED
         };
 
-        #ifdef DEBUG
-            // Used in Serial.print for debug purposes
-            String CalibState[] = {
+        #ifdef DEBUG_CALIB
+            // Used in Serial.print from coverCalibrateRoutine() for debug purposes
+            std::vector<String> CalibState{
                 "NOT_CALIBRATED",
                 "RAISE_1ST_CHKPWR_0W",
                 "UP_REACHED_1ST",
@@ -142,12 +144,11 @@ class Shelly2PM : public Shelly{
         // #########################
 
         String getJsonUserConfig();
+        void initMqttTopics();
+        void initPubSub();
 
     public:
-        //Shelly2PM();
         void setup();
-        void initMqttTopics();
-        bool parseJsonUserConfig();
-        void initPubSub();
         void loop();
+        bool parseJsonUserConfig();
 };

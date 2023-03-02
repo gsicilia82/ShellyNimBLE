@@ -16,6 +16,10 @@ bool Shelly::getRelayState ( int relay){
 
 
 void Shelly::initMqttTopics(){
+    #ifdef DEBUG
+        Serial.println(">>> Called Shelly::initMqttTopics()");
+        Serial.println(">>> Pin.Input 0: " + Pin.Input[0] );
+    #endif
 
     Topic.UserConfig = TopicGlobal.Device + "/Config";
     for(int i : Pin.Input){
@@ -43,6 +47,14 @@ void Shelly::initPubSub(){
     }
 }
 
+bool Shelly::parseJsonUserConfig(){
+    return true;
+}
+
+void Shelly::loop(){
+    /* Handle Input and Relay*/
+}
+
 
 /*
 ************************************************************
@@ -52,9 +64,11 @@ START: Class Shelly Plus 2PM
 ************************************************************
 */
 
-//Shelly2PM::Shelly2PM019(){}
-
 void Shelly2PM::setup(){
+    #ifdef DEBUG
+        Serial.println(">>> Called Shelly2PM::setup()");
+    #endif
+
     deviceMode.Setting = readString( "mode", "Cover"); // Default setting is "Cover" for security reasons
 
     String tmp = readString( "input1", "");
@@ -84,9 +98,15 @@ void Shelly2PM::setup(){
             coverPosition = readInt( "coverPosition", coverPosition);
         }
     }
+
+    initMqttTopics();
+    initPubSub();
 }
 
 void Shelly2PM::initMqttTopics(){
+    #ifdef DEBUG
+        Serial.println(">>> Called Shelly2PM::initMqttTopics()");
+    #endif
 
     Shelly::initMqttTopics();
 
@@ -105,29 +125,16 @@ void Shelly2PM::initMqttTopics(){
 
 }
 
-String Shelly2PM::getJsonUserConfig(){
-    StaticJsonDocument<200> json;
-    String JsonUserConfig;
-    json[ "Mode_Input1"] = UserConfig.ModeInputX[0];
-    json[ "Mode_Input2"] = UserConfig.ModeInputX[1];
-    json[ "SwapInput"] = UserConfig.SwapInput;
-    json[ "SwapOutput"] = UserConfig.SwapOutput;
-    serializeJson( json, JsonUserConfig);
-
-    return JsonUserConfig;
-}
-
-bool Shelly2PM::parseJsonUserConfig(){
-    
-    return true;
-}
-
 void Shelly2PM::initPubSub(){
+    #ifdef DEBUG
+        Serial.println(">>> Called Shelly2PM::initPubSub()");
+    #endif
 
     Shelly::initPubSub();
+    String JsonUserConfig = getJsonUserConfig();
 
     for ( int i = 0; i < 2; i++) {
-        pub( Topic.UserConfig, getJsonUserConfig() );
+        pub( Topic.UserConfig, JsonUserConfig );
 
         pub( Topic.Power1   , "0");
         pub( Topic.Power2   , "0");
@@ -149,7 +156,31 @@ void Shelly2PM::initPubSub(){
         mqttClient.subscribe(Topic.CoverCalib.c_str(), 1);
     }
 }
+
+String Shelly2PM::getJsonUserConfig(){
+    #ifdef DEBUG
+        Serial.println(">>> Called Shelly2PM::getJsonUserConfig()");
+    #endif
+
+    StaticJsonDocument<200> json;
+    String JsonUserConfig;
+    json[ "Mode_Input1"] = UserConfig.ModeInputX[0];
+    json[ "Mode_Input2"] = UserConfig.ModeInputX[1];
+    json[ "SwapInput"] = UserConfig.SwapInput;
+    json[ "SwapOutput"] = UserConfig.SwapOutput;
+    serializeJson( json, JsonUserConfig);
+
+    return JsonUserConfig;
+}
+
+bool Shelly2PM::parseJsonUserConfig(){
+    #ifdef DEBUG
+        Serial.println(">>> Called Shelly2PM::parseJsonUserConfig()");
+    #endif
+
+    return true;
+}
     
 void Shelly2PM::loop(){
-
+    
 }

@@ -243,7 +243,7 @@ void stopCalibration( String msg=""){
 
 void coverCalibrateRoutine(){
 
-    #ifdef DEBUG
+    #ifdef DEBUG_CALIB
         Serial.println("Called coverCalibrateRoutine(). Actual coverCalibState is: " + CalibState[ coverCalibState] );
     #endif
 
@@ -354,7 +354,7 @@ void coverCalibrateRoutine(){
 
     isCalibWaiting = true;
 
-    #ifdef DEBUG
+    #ifdef DEBUG_CALIB
         Serial.println("Function coverCalibrateRoutine() finished. Actual coverCalibState is: " + CalibState[ coverCalibState] );
     #endif
 
@@ -576,15 +576,7 @@ bool MqttCommandShelly(String& topic, String& pay) {
 
 void SetupShelly() {
 
-    Shelly2PM specificShelly;
 
-    shelly = &specificShelly;
-
-    shelly->setup();
-
-    shelly->initMqttTopics();
-
-    shelly->initPubSub();
 
     // Initialize Shelly device
 
@@ -1246,7 +1238,6 @@ void setup() {
         // --------------------- Publish init state ---------------------
 
         initPubSub();
-
         mqttIgnoreCounter = 0;
 
         #ifdef DEBUG
@@ -1308,7 +1299,6 @@ void setup() {
         });
 
         AsyncElegantOTA.begin(&server);    // Start ElegantOTA on "/update"
-        Serial.println("HTTP OTA server started");
 
         server.begin();
 
@@ -1328,7 +1318,8 @@ void setup() {
         
         // --------------------- Setup Shelly ---------------------
 
-        SetupShelly();
+        shelly = &shelly2pm;
+        shelly->setup();
 
         #ifdef DEBUG
             Serial.println(">>> Init Shelly done.");
@@ -1355,7 +1346,6 @@ void loop() {
             pBLEScan->start(0, nullptr, false);
         }
 
-
         // --------------------- OTA handler ---------------------
 
         ArduinoOTA.handle();
@@ -1372,7 +1362,7 @@ void loop() {
 
         // --------------------- Loop Shelly ---------------------
 
-        LoopShelly();
+        shelly->loop();
 
     }
 
