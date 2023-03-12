@@ -521,15 +521,6 @@ void setup() {
             Serial.println(">>> Init ScanFilter done.");
         #endif
 
-        // --------------------- Publish init state ---------------------
-
-        initPubSub();
-        mqttIgnoreCounter = 0;
-
-        #ifdef DEBUG
-            Serial.println(">>> Init 1st publish of states done.");
-        #endif
-
         // --------------------- Scanner process ---------------------
 
         NimBLEDevice::init("");
@@ -632,6 +623,15 @@ void setup() {
 
         #ifdef DEBUG
             Serial.println(">>> Init Shelly done.");
+        #endif
+
+        // --------------------- Publish init state ---------------------
+
+        initPubSub();
+        mqttIgnoreCounter = 0;
+
+        #ifdef DEBUG
+            Serial.println(">>> Init 1st publish of states done.");
         #endif
     }
 
