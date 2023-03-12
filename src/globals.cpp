@@ -21,6 +21,14 @@ bool pub(String topic, String payload, bool ignoreReceivings /*= false*/, uint8_
 
 }
 
+bool pub(String topic, int payload, bool ignoreReceivings /*= false*/, uint8_t qos /*= 0*/, bool retain /*= false*/, size_t length /*= 0*/, bool dup /*= false*/, uint16_t message_id /*= 0*/){
+
+    String sPayload;
+    if ( payload == 0) sPayload = "false";
+    else sPayload = "true";
+    return pub( topic, sPayload, ignoreReceivings , qos, retain, length, dup, message_id);
+}
+
 bool pubFast(String topic, String payload, bool ignoreReceivings /*= false*/, uint8_t qos /*= 0*/, bool retain /*= false*/, size_t length /*= 0*/, bool dup /*= false*/, uint16_t message_id /*= 0*/){
 
     for (int i = 0; i < 10; i++){
@@ -29,7 +37,7 @@ bool pubFast(String topic, String payload, bool ignoreReceivings /*= false*/, ui
         }
         delay(25);
     }
-    return false;
+    return mqttClient.publish(topic.c_str(), qos, retain, payload.c_str(), length, dup, message_id);
 
 }
 
@@ -39,7 +47,7 @@ void report( String msg, bool withPub /*= true*/){
 }
 
 
-String boolToString(bool b){ return b ? "true" : "false"; }
+//String boolToString(bool b){ return b ? "true" : "false"; }
 
 bool stringToBool(String s){ return s == "true" ? true : false; }
 

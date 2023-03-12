@@ -39,8 +39,11 @@ DNSServer dnsServer;
 AsyncWebServer server(80);
 
 Shelly *shelly;
-Shelly2PM shelly2pm;
 
+bool wifiWasConnected = false;
+bool captivePortalActivated = false;
+
+String deviceModel = "";
 
 // ------------------------ Predefined in globals ------------------------
 
@@ -122,28 +125,12 @@ struct TOPIC_MAIN {
 } Topic;
 
 
-bool wifiWasConnected = false;
-bool captivePortalActivated = false;
 
-String deviceModel = "";
-
+/*
 
 // ##########################################################################
 // ------------------------ Shelly related variables ------------------------
 // ##########################################################################
-
-struct SHELLYP_2PM015 {
-    int ButtonReset = 27;
-    std::vector<int> Switch{ 2, 18 };
-    std::vector<int> Relay{ 13, 12 };
-    int I2C_SCL = 25;
-    int I2C_SDA = 33;
-    int ADE7953 = 36;
-    int Temperature = 37;
-
-    std::vector<String> SwitchMode{ "Switch", "Switch" };
-    String Config = "{ \"Switch1_Mode\": \"Switch\", \"Switch2_Mode\": \"Switch\", \"SwapInput\": false, \"SwapOutput\": false ";
-};
 
 struct SHELLYP_1 {
     int ButtonReset = 25;
@@ -166,29 +153,4 @@ struct SHELLYP_I4 {
 };
 
 
-
-
-
-
-//variables to keep track of the timing of recent changes from switches(=debounce)
-unsigned long switchTime1 = 0;
-unsigned long switchLastTime1 = 0;
-bool switchState1, switchLastState1;
-
-unsigned long switchTime2 = 0;
-unsigned long switchLastTime2 = 0;
-bool switchState2, switchLastState2;
-
-unsigned long switchTimeR = 0;
-unsigned long switchLastTimeR = 0;
-bool switchStateR, switchLastStateR;
-
-unsigned long switchTimeLongPressR = 0;
-bool flagLongPress = false;
-
-int PinSwitchR, PinSwitch1, PinSwitch2, PinRelay1, PinRelay2, PinSCL, PinSDA, PinADE7953;
-
-String switchMode1, switchMode2; // possible switchMode: BUTTON or SWITCH or DETACHED
-
-
-
+*/

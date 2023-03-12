@@ -36,13 +36,14 @@ extern TOPIC_GLOBAL TopicGlobal;
 */
 
 bool pub(String topic, String payload, bool ignoreReceivings=false, uint8_t qos = 0, bool retain = false, size_t length = 0, bool dup = false, uint16_t message_id = 0);
+bool pub(String topic, int payload, bool ignoreReceivings=false, uint8_t qos = 0, bool retain = false, size_t length = 0, bool dup = false, uint16_t message_id = 0);
 
 bool pubFast(String topic, String payload, bool ignoreReceivings=false, uint8_t qos = 0, bool retain = false, size_t length = 0, bool dup = false, uint16_t message_id = 0);
 
 void report( String msg, bool withPub=true);
 
 
-String boolToString(bool b);
+//String boolToString(bool b);
 
 bool stringToBool(String s);
 
