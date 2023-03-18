@@ -81,6 +81,14 @@ void filterStringToVector(){
 
 void initPubSub() {
 
+    Serial.println("MQTT: Publish all states to server.");
+
+    shelly->initPubSub();
+
+    mqttClient.unsubscribe( Topic.Restart.c_str() );
+    mqttClient.unsubscribe( Topic.HardReset.c_str() );
+    mqttClient.unsubscribe( Topic.Filter.c_str() );
+
     for (int i = 0; i < 2; i++) {
         pub( Topic.Online, "true");
         pub( Topic.Ip, WiFi.localIP().toString() );
@@ -90,9 +98,10 @@ void initPubSub() {
         pub( TopicGlobal.Message, "Ready");
         if( i==0) delay(500);
     }
-        mqttClient.subscribe( Topic.Restart.c_str(), 1);
-        mqttClient.subscribe( Topic.HardReset.c_str(), 1);
-        mqttClient.subscribe( Topic.Filter.c_str(), 1);
+
+    mqttClient.subscribe( Topic.Restart.c_str(), 1);
+    mqttClient.subscribe( Topic.HardReset.c_str(), 1);
+    mqttClient.subscribe( Topic.Filter.c_str(), 1);
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
@@ -115,14 +124,18 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     }
     Serial.println();
 
-    if (top == Topic.Restart && pay == "true"){
-        restartDevice();
+    if (top == Topic.Restart){
+        if ( pay == "true"){
+            restartDevice();
+        }
     }
-    else if (top == Topic.HardReset && pay == "true"){
-        pub( Topic.HardReset, "false", true);
-        clearPreferences();
-        delay(2500);
-        restartDevice();
+    else if (top == Topic.HardReset){
+        if ( pay == "true"){
+            pub( Topic.HardReset, "false", true);
+            clearPreferences();
+            delay(2500);
+            restartDevice();
+        }
     }
     else if (top == Topic.Filter){
         pub( Topic.Filter, pay, true);
@@ -299,39 +312,6 @@ void setupApServer(){
 }
 
 
-void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
-
-    Serial.println("Disconnected from MQTT. Restarting ...");
-    ESP.restart();
-}
-
-
-void WiFiEvent(WiFiEvent_t event) {
-
-    switch(event) {
-    case SYSTEM_EVENT_STA_GOT_IP:
-        Serial.print("WiFi connected with IP address: ");
-        Serial.println( WiFi.localIP() );
-        writeInt( "wifiValidated", 1);
-        wifiWasConnected = true;
-        break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-    // restart only if was connected one time, otherwise not necessary cause of loop in initNetwork()
-        if ( wifiWasConnected){ 
-            Serial.println("WiFi lost connection! Restarting ESP32 for clean init.");
-            ESP.restart();
-        }
-        break;
-    }
-}
-
-
-void onMqttConnect( bool sessionPresent) {
-    Serial.println("Connected to MQTT.");
-	int mqttValidated = readInt( "mqttValidated", 0);
-	if ( mqttValidated == 0) writeInt( "mqttValidated", 1);
-}
-
 void initCaptivePortal(){
 
     captivePortalActivated = true;
@@ -352,81 +332,126 @@ void initCaptivePortal(){
 	server.begin();
 }
 
-void initNetwork(){
 
-	String wifiSSID   = readString( "ssid", "");
-	String wifiPass   = readString( "pass", "");
-	String mqttServer = readString( "server", "");
+void connectToMqtt() {
+
+    String mqttServer = readString( "server", "");
 	int mqttPort      = readInt( "port", 0);
 
-	if ( wifiSSID == "" || wifiPass == "" || mqttServer == "" || mqttPort == 0){
+    if (mqttServer == "" || mqttPort == 0){
+        clearPreferences();
 		initCaptivePortal();
 		return;
 	}
 
-	int wifiValidated = readInt( "wifiValidated", 0);
+    Serial.println( "Connecting to MQTT " + mqttServer + ":" + String(mqttPort) + "...");
+    mqttClient.setServer( mqttServer.c_str(), mqttPort);
+    mqttClient.connect();
+}
+
+
+void onMqttConnect( bool sessionPresent) {
+    Serial.println("Connected to MQTT.");
+    scanAutostart = true;
 	int mqttValidated = readInt( "mqttValidated", 0);
+	if ( mqttValidated == 0) writeInt( "mqttValidated", 1);
 
-    // --------------------- Connect to WIFI ---------------------
+    delay(1000);
 
-    WiFi.onEvent(WiFiEvent);
-    Serial.println( "Connecting to Wi-Fi " + wifiSSID + " with " + wifiPass + "...");
-    WiFi.begin( wifiSSID.c_str(), wifiPass.c_str() );
-    int timeout = 0;
-    while ( WiFi.status() != WL_CONNECTED){
-        delay(500);
-        Serial.println(".");
-        timeout++;
-        if  (timeout > 120){
-            Serial.println("");
-			if ( wifiValidated == 1){
-				Serial.println("WIFI not reachable, restarting ESP32");
-				ESP.restart();
-			}
-			else {
-				Serial.println("WIFI not reachable, wrong credentials? HardReset ESP32 and restarting into AP mode...");
-				clearPreferences();
-				delay(2000);
-				ESP.restart();
-			}
+    initPubSub();
+
+    if ( !firstConnectAfterBoot){
+        Serial.println( "Timer for re-publish all states started...");
+        xTimerStart( mqttRePublishAgain, 0);
+    }
+
+}
+
+
+void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
+    Serial.println("Disconnected from MQTT.");
+    scanAutostart = false;
+    pBLEScan->stop();
+    firstConnectAfterBoot = false;
+    int mqttValidated = readInt( "mqttValidated", 0);
+    if ( mqttValidated == 1){
+        if ( WiFi.isConnected() ) {
+            xTimerStart(mqttReconnectTimer, 0);
         }
     }
-    Serial.println();
+    else {
+        Serial.println("MQTT not reachable, wrong configuration? HardReset ESP32 and restarting EPS32 into AP mode...");
+        clearPreferences();
+        delay(2000);
+        ESP.restart();
+    }
+}
 
-    // --------------------- Connect to MQTT ---------------------
 
-    Serial.print( "Connecting to MQTT " + mqttServer + ":" + String(mqttPort) + "...");
-	mqttClient.onConnect( onMqttConnect);
-    mqttClient.onMessage( onMqttMessage);
-    mqttClient.setServer( mqttServer.c_str(), mqttPort);
+void WiFiEvent(WiFiEvent_t event) {
+
+    switch(event) {
+        case SYSTEM_EVENT_STA_GOT_IP:
+            Serial.print("WiFi connected with IP address: ");
+            Serial.println( WiFi.localIP() );
+            writeInt( "wifiValidated", 1);
+            connectToMqtt();
+            break;
+
+        case SYSTEM_EVENT_STA_DISCONNECTED:
+            Serial.println("WiFi lost connection / WiFi not connectable");
+            int wifiValidated = readInt( "wifiValidated", 0);
+            if ( wifiValidated == 1){
+                xTimerStop(mqttReconnectTimer, 0);
+            }
+            else {
+                Serial.println("WIFI not reachable, wrong credentials? HardReset ESP32 and restarting into AP mode...");
+                clearPreferences();
+                delay(2000);
+                ESP.restart();
+            }
+            break;
+
+    }
+}
+
+
+void connectToWifi() {
+
+    String wifiSSID   = readString( "ssid", "");
+	String wifiPass   = readString( "pass", "");
+
+    if ( wifiSSID == "" || wifiPass == ""){
+        clearPreferences();
+		initCaptivePortal();
+		return;
+	}
+
+    Serial.println( "Connecting to Wi-Fi " + wifiSSID + " with " + wifiPass + "...");
+    WiFi.begin( wifiSSID.c_str(), wifiPass.c_str() );
+}
+
+
+void initNetwork(){
+
+    mqttRePublishAgain = xTimerCreate("wifiTimer", pdMS_TO_TICKS(30000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(initPubSub));
+    mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(5000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+
+    WiFi.onEvent(WiFiEvent);
+
+    firstConnectAfterBoot = true;
+
     mqttClient.setWill( Topic.Online.c_str(), 1, true, "false");
+	mqttClient.onConnect( onMqttConnect);
+    mqttClient.onDisconnect( onMqttDisconnect);
+    mqttClient.onMessage( onMqttMessage);
     String locIP = String( WiFi.localIP() );
     locIP.replace( ".", "");
     mqttClient.setClientId(  locIP.c_str() );
-    mqttClient.connect();
-    timeout = 0;
-    while ( !mqttClient.connected() ){
-        mqttClient.connect();
-        delay(2000);
-        Serial.print(".");
-        timeout++;
-        if  (timeout > 60){
-            Serial.println("");
-            if ( mqttValidated == 1){
-				Serial.println("MQTT not reachable, restarting ESP32");
-				ESP.restart();
-			}
-			else {
-				Serial.println("MQTT not reachable, wrong configuration? HardReset ESP32 and restarting EPS32 into AP mode...");
-				clearPreferences();
-				delay(2000);
-				ESP.restart();
-			}
-        }
-    }
-    mqttClient.onDisconnect( onMqttDisconnect);
-    Serial.println();
-    Serial.println("Connected to MQTT.");
+
+    mqttIgnoreCounter = 0;
+
+    connectToWifi();
 
 }
 
@@ -504,12 +529,28 @@ void setup() {
             Serial.println(">>> Init MQTT Topics done.");
         #endif
 
-        // --------------------- Init Network ---------------------
+        // --------------------- Setup Shelly ---------------------
 
-        initNetwork();
+        if ( deviceModel == "ShellyPlus-1(PM)"){
+            static Shelly1PM specificShelly;
+            shelly = &specificShelly;
+        }
+        else if ( deviceModel == "ShellyPlus-2PM"){
+            static Shelly2PM specificShelly;
+            shelly = &specificShelly;
+        }
+        else if ( deviceModel == "ShellyPlus-i4"){
+            static Shellyi4 specificShelly;
+            shelly = &specificShelly;
+        }
+        else {
+            Serial.println("### ERROR: Device model unknown: " + deviceModel);
+        }
+
+        shelly->setup();
 
         #ifdef DEBUG
-            Serial.println(">>> Init Network done.");
+            Serial.println(">>> Init Shelly done.");
         #endif
 
         // --------------------- Scanner filter ---------------------
@@ -519,6 +560,14 @@ void setup() {
 
         #ifdef DEBUG
             Serial.println(">>> Init ScanFilter done.");
+        #endif
+
+        // --------------------- Init Network ---------------------
+
+        initNetwork();
+
+        #ifdef DEBUG
+            Serial.println(">>> Init Network done.");
         #endif
 
         // --------------------- Scanner process ---------------------
@@ -600,39 +649,9 @@ void setup() {
         #ifdef DEBUG
             Serial.println(">>> Init boot-time done.");
         #endif
+
+        pub( Topic.Online, "true");
         
-        // --------------------- Setup Shelly ---------------------
-
-        if ( deviceModel == "ShellyPlus-1(PM)"){
-            static Shelly1PM specificShelly;
-            shelly = &specificShelly;
-        }
-        else if ( deviceModel == "ShellyPlus-2PM"){
-            static Shelly2PM specificShelly;
-            shelly = &specificShelly;
-        }
-        else if ( deviceModel == "ShellyPlus-i4"){
-            static Shellyi4 specificShelly;
-            shelly = &specificShelly;
-        }
-        else {
-            Serial.println("### ERROR: Device model unknown: " + deviceModel);
-        }
-
-        shelly->setup();
-
-        #ifdef DEBUG
-            Serial.println(">>> Init Shelly done.");
-        #endif
-
-        // --------------------- Publish init state ---------------------
-
-        initPubSub();
-        mqttIgnoreCounter = 0;
-
-        #ifdef DEBUG
-            Serial.println(">>> Init 1st publish of states done.");
-        #endif
     }
 
 }
@@ -649,7 +668,7 @@ void loop() {
 
         // --------------------- BLE Scanner Autostart ---------------------
 
-        if ( pBLEScan->isScanning() == false) {
+        if ( pBLEScan->isScanning() == false && scanAutostart) {
             // Start scan with: duration = 0 seconds(forever), no scan end callback, not a continuation of a previous scan.
             pBLEScan->start(0, nullptr, false);
         }
@@ -671,6 +690,14 @@ void loop() {
         // --------------------- Loop Shelly ---------------------
 
         shelly->loop();
+
+        // --------------------- Slow Loop ---------------------
+
+         static unsigned long lastSlowLoop = 0;
+         if ( millis() - lastSlowLoop > 60000){
+            lastSlowLoop = millis();
+            pub( Topic.Online, "true");
+         }
 
     }
 

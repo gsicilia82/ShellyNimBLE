@@ -86,6 +86,10 @@ void Shelly::initMqttTopics(){
 
 void Shelly::initPubSub(){
 
+    for(int i=0; i < Topic.Relay.size(); i++){
+        mqttClient.unsubscribe(Topic.Relay[i].c_str() );
+    }
+
     for (int i = 0; i < 2; i++) {
         for(int i=0; i < Topic.Input.size(); i++){
             pub( Topic.Input[i], digitalRead( Pin.Input[i] ) );
@@ -275,9 +279,7 @@ void Shelly2PM::setup(){
     pinMode( Pin.ButtonReset, INPUT_PULLUP);
     Switch[2].switchLastState = Switch[2].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
     
-
     initMqttTopics();
-    initPubSub();
 
     myADE7953.initialize( Pin.I2C_SCL, Pin.I2C_SDA);
 }
@@ -381,9 +383,15 @@ void Shelly2PM::initPubSub(){
     Shelly::initPubSub();
     String JsonUserConfig = getJsonFromConfig();
 
+    mqttClient.unsubscribe(Topic.Config.c_str() );
+    if ( deviceMode.Setting == deviceMode.Cover){
+        mqttClient.unsubscribe(Topic.CoverPosSet.c_str() );
+        mqttClient.unsubscribe(Topic.CoverStop.c_str() );
+        mqttClient.unsubscribe(Topic.CoverCalib.c_str() );
+    }
+
     for ( int i = 0; i < 2; i++) {
         pub( Topic.Config, JsonUserConfig );
-
         pub( Topic.Power[0] , "0");
         pub( Topic.Power[1] , "0");
         pub( Topic.PowerAcc , "0");
@@ -396,8 +404,8 @@ void Shelly2PM::initPubSub(){
         }
         if( i==0) delay(500);
     }
-    mqttClient.subscribe(Topic.Config.c_str(), 1);
 
+    mqttClient.subscribe(Topic.Config.c_str(), 1);
     if ( deviceMode.Setting == deviceMode.Cover){
         mqttClient.subscribe(Topic.CoverPosSet.c_str(), 1);
         mqttClient.subscribe(Topic.CoverStop.c_str(), 1);
@@ -895,7 +903,6 @@ void Shelly1PM::setup(){
     Switch[2].switchLastState = Switch[2].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
     
     initMqttTopics();
-    initPubSub();
 }
 
 void Shelly1PM::extendBaseConfig(){
@@ -951,10 +958,13 @@ void Shelly1PM::initPubSub(){
     Shelly::initPubSub();
     String JsonUserConfig = getJsonFromConfig();
 
+    mqttClient.unsubscribe(Topic.Config.c_str() );
+
     for ( int i = 0; i < 2; i++) {
         pub( Topic.Config, JsonUserConfig );
         if( i==0) delay(500);
     }
+
     mqttClient.subscribe(Topic.Config.c_str(), 1);
 }
 
@@ -1073,7 +1083,6 @@ void Shellyi4::setup(){
     Switch[2].switchLastState = Switch[2].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
 
     initMqttTopics();
-    initPubSub();
 }
 
 void Shellyi4::extendBaseConfig(){

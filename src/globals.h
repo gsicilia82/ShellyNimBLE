@@ -16,7 +16,6 @@ extern int mqttIgnoreCounter;
 extern unsigned long mqttDisableTime;
 extern bool mqttDisabled;
 
-
 extern AsyncMqttClient mqttClient;
 extern Preferences preferences;
 extern String deviceName;

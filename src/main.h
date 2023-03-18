@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <NimBLEDevice.h>
+extern "C" {
+	#include "freertos/FreeRTOS.h"
+	#include "freertos/timers.h"
+}
 
 // OTA dependencies
 #include <ESPmDNS.h>
@@ -32,7 +36,12 @@
     #warning FIRMWARE_VERSION was not set in build flags!
 #endif
 
+TimerHandle_t mqttReconnectTimer;
+TimerHandle_t mqttRePublishAgain;
+bool firstConnectAfterBoot = false;
+
 NimBLEScan* pBLEScan;
+bool scanAutostart = true;
 
 DNSServer dnsServer;
 
@@ -40,7 +49,6 @@ AsyncWebServer server(80);
 
 Shelly *shelly;
 
-bool wifiWasConnected = false;
 bool captivePortalActivated = false;
 
 String deviceModel = "";
@@ -67,6 +75,7 @@ Area            HostName
 Worldwide	    pool.ntp.org
 Asia	        asia.pool.ntp.org
 Europe	        europe.pool.ntp.org
+Germany         de.pool.ntp.org
 North America	north-america.pool.ntp.org
 Oceania	        oceania.pool.ntp.org
 South America	south-america.pool.ntp.org
@@ -124,33 +133,3 @@ struct TOPIC_MAIN {
     Info;
 } Topic;
 
-
-
-/*
-
-// ##########################################################################
-// ------------------------ Shelly related variables ------------------------
-// ##########################################################################
-
-struct SHELLYP_1 {
-    int ButtonReset = 25;
-    std::vector<int> Switch{ 4 };
-    std::vector<int> Relay{ 26 };
-    int Relay1 = 26;
-    int Temperature = 32;
-
-    std::vector<String> SwitchMode{ "Switch" };
-    String Config = "{ \"Switch1_Mode\": \"Switch\" ";
-};
-
-struct SHELLYP_I4 {
-    int ButtonReset = -1;
-    std::vector<int> Switch{ 12, 14, 27, 26 };
-    std::vector<int> Relay;
-
-    std::vector<String> SwitchMode{ "Detached", "Detached", "Detached", "Detached" };
-    String Config = "{ \"Config\": \"ShellyPlus-i4\" ";
-};
-
-
-*/

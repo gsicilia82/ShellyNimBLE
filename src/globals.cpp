@@ -2,10 +2,15 @@
 
 bool pub(String topic, String payload, bool ignoreReceivings /*= false*/, uint8_t qos /*= 0*/, bool retain /*= false*/, size_t length /*= 0*/, bool dup /*= false*/, uint16_t message_id /*= 0*/){
 
+    if ( !mqttClient.connected() ) return false;
+
+        #ifdef DEBUG_MQTT
+            Serial.println( "MQTT, pub: " + topic + " | message: " + payload);
+        #endif
+
     if ( ignoreReceivings) {
         mqttIgnoreCounter++;
-        #ifdef VERBOSE_MQTT
-            Serial.print( "MQTT, pub: " + topic);
+        #ifdef DEBUG_MQTT
             Serial.printf("| Ignore next <%d> incoming messages!\n", mqttIgnoreCounter);
         #endif
         mqttDisableTime = millis();
@@ -29,7 +34,10 @@ bool pub(String topic, int payload, bool ignoreReceivings /*= false*/, uint8_t q
     return pub( topic, sPayload, ignoreReceivings , qos, retain, length, dup, message_id);
 }
 
+// Used only for BLE updates
 bool pubFast(String topic, String payload, bool ignoreReceivings /*= false*/, uint8_t qos /*= 0*/, bool retain /*= false*/, size_t length /*= 0*/, bool dup /*= false*/, uint16_t message_id /*= 0*/){
+
+    if ( !mqttClient.connected() ) return false;
 
     for (int i = 0; i < 10; i++){
         if ( mqttClient.publish(topic.c_str(), qos, retain, payload.c_str(), length, dup, message_id) ){

@@ -63,7 +63,6 @@ class Shelly {
         void loopCheckSwR( int i);
 
         virtual void initMqttTopics();
-        virtual void initPubSub();
         virtual String getJsonFromConfig() = 0;
         virtual bool setConfigFromJson( String JsonConfig, bool withPub=true) = 0;
         virtual void workInput( int input, bool state) = 0;
@@ -73,6 +72,7 @@ class Shelly {
     public:
         Shelly();
         virtual void setup() = 0;
+        virtual void initPubSub();
         virtual bool onMqttMessage( String& topic, String& pay) = 0;
         virtual void loop() = 0;
 };
@@ -182,7 +182,6 @@ class Shelly2PM : public Shelly{
         void extendBaseConfig();
         void overwriteBaseConfig();
         void initMqttTopics();
-        void initPubSub();
         String getJsonFromConfig();
         bool setConfigFromJson( String JsonConfig, bool withPub=true);
         bool parseJsonConfig();
@@ -191,6 +190,7 @@ class Shelly2PM : public Shelly{
         
     public:
         void setup();
+        void initPubSub();
         bool onMqttMessage( String& topic, String& pay);
         void loop();
 };
@@ -202,7 +202,6 @@ class Shelly1PM : public Shelly{
         void extendBaseConfig();
         void overwriteBaseConfig();
         void initMqttTopics();
-        void initPubSub();
         String getJsonFromConfig();
         bool setConfigFromJson( String JsonConfig, bool withPub=true);
         bool parseJsonConfig();
@@ -211,6 +210,7 @@ class Shelly1PM : public Shelly{
         
     public:
         void setup();
+        void initPubSub();
         bool onMqttMessage( String& topic, String& pay);
         void loop();
 };
@@ -221,7 +221,6 @@ class Shellyi4 : public Shelly{
         void extendBaseConfig();
         void overwriteBaseConfig();
         void initMqttTopics();
-        void initPubSub();
         String getJsonFromConfig();
         bool setConfigFromJson( String JsonConfig, bool withPub=true);
         void workInput( int input, bool state);
@@ -229,6 +228,7 @@ class Shellyi4 : public Shelly{
         
     public:
         void setup();
+        void initPubSub();
         bool onMqttMessage( String& topic, String& pay);
         void loop();
 };
