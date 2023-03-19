@@ -508,6 +508,7 @@ void setup() {
     deviceModel = readString( "model", "");
     if ( deviceName == "" || deviceModel == ""){
         Serial.println( "device model or device name is empty, starting CaptivaPortal");
+        clearPreferences();
         initCaptivePortal();
     }
     else {
