@@ -383,23 +383,16 @@ void Shelly2PM::initPubSub(){
     Shelly::initPubSub();
     String JsonUserConfig = getJsonFromConfig();
 
-    mqttClient.unsubscribe(Topic.Config.c_str() );
-    if ( deviceMode.Setting == deviceMode.Cover){
-        mqttClient.unsubscribe(Topic.CoverPosSet.c_str() );
-        mqttClient.unsubscribe(Topic.CoverStop.c_str() );
-        mqttClient.unsubscribe(Topic.CoverCalib.c_str() );
-    }
-
     for ( int i = 0; i < 2; i++) {
-        pub( Topic.Config, JsonUserConfig );
+        pub( Topic.Config, JsonUserConfig, true);
         pub( Topic.Power[0] , "0");
         pub( Topic.Power[1] , "0");
         pub( Topic.PowerAcc , "0");
 
         if ( deviceMode.Setting == deviceMode.Cover){
-            pub( Topic.CoverPosSet, String( coverPosition) );
-            pub( Topic.CoverStop, "false");
-            pub( Topic.CoverCalib, "false");
+            pub( Topic.CoverPosSet, String( coverPosition), true);
+            pub( Topic.CoverStop, "false", true);
+            pub( Topic.CoverCalib, "false", true);
             pub( Topic.CoverState, "stopped");
         }
         if( i==0) delay(500);
@@ -961,7 +954,7 @@ void Shelly1PM::initPubSub(){
     mqttClient.unsubscribe(Topic.Config.c_str() );
 
     for ( int i = 0; i < 2; i++) {
-        pub( Topic.Config, JsonUserConfig );
+        pub( Topic.Config, JsonUserConfig, true);
         if( i==0) delay(500);
     }
 

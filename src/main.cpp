@@ -85,16 +85,12 @@ void initPubSub() {
 
     shelly->initPubSub();
 
-    mqttClient.unsubscribe( Topic.Restart.c_str() );
-    mqttClient.unsubscribe( Topic.HardReset.c_str() );
-    mqttClient.unsubscribe( Topic.Filter.c_str() );
-
     for (int i = 0; i < 2; i++) {
         pub( Topic.Online, "true");
         pub( Topic.Ip, WiFi.localIP().toString() );
-        pub( Topic.Restart, "false");
-        pub( Topic.HardReset, "false");
-        pub( Topic.Filter, sFilterBle);
+        pub( Topic.Restart, "false", true);
+        pub( Topic.HardReset, "false", true);
+        pub( Topic.Filter, sFilterBle, true);
         pub( TopicGlobal.Message, "Ready");
         if( i==0) delay(500);
     }
@@ -112,14 +108,15 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     String top = String(topic);
     String pay = String(new_payload);
 
-    Serial.print("MQTT received: " + top + " | " + pay);
+    Serial.println("MQTT received: " + top + " | " + pay);
 
     if ( mqttIgnoreCounter > 0){
         mqttIgnoreCounter--;
-        #ifdef DEBUG_MQTT
-            Serial.printf(" >>> MQTT command ignored, remaining ignore-counter: %d!\n", mqttIgnoreCounter);
-        #endif
-        if ( mqttIgnoreCounter == 0) mqttDisabled = false;
+        Serial.printf(" >>> MQTT command ignored, remaining ignore-counter: %d!\n", mqttIgnoreCounter);
+        if ( mqttIgnoreCounter == 0){
+            mqttDisabled = false;
+            Serial.println(">>> MQTT commandhandler enabled again!");
+        }
         return;
     }
     Serial.println();
@@ -649,9 +646,6 @@ void setup() {
         #ifdef DEBUG
             Serial.println(">>> Init boot-time done.");
         #endif
-
-        pub( Topic.Online, "true");
-        
     }
 
 }
@@ -682,9 +676,7 @@ void loop() {
         if ( mqttDisabled && ( millis() - mqttDisableTime > 5000) ){
             mqttDisabled = false;
             mqttIgnoreCounter = 0;
-            #ifdef DEBUG_MQTT
-                Serial.println("MQTT commandhandler enabled again!");
-            #endif
+            Serial.println(">>> MQTT commandhandler enabled again!");
         }
 
         // --------------------- Loop Shelly ---------------------
