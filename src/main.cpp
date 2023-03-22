@@ -330,6 +330,43 @@ void initCaptivePortal(){
 }
 
 
+String getLocalTime(){
+
+    struct tm timeinfo;
+    delay( 500);
+    if( !getLocalTime( &timeinfo)){
+        Serial.println("Failed to obtain time (1st)!");
+        delay( 2000);
+        if( !getLocalTime( &timeinfo)){
+            Serial.println("Failed to obtain time (2nd)!");
+            delay( 4000);
+            if( !getLocalTime( &timeinfo)){
+                Serial.println("Failed to obtain time (3rd)!");
+                return "Error-Getting-Time";
+            }
+        }
+    }
+    char timeStringBuff[50]; //50 chars should be enough
+    strftime(timeStringBuff, sizeof(timeStringBuff), "%B %d %Y %H:%M", &timeinfo);
+    String asString(timeStringBuff);
+    return asString;
+}
+
+void publishInfo(){
+    #ifdef DEBUG
+        Serial.println(">>> publish Info ...");
+    #endif
+
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    Info.bootTime = getLocalTime();
+    Info.model = deviceModel;
+    pub( Topic.Info, Info.toString() );
+    delay(250);
+    // Send two times to get non-empty ioBroker entry
+    pub( Topic.Info, Info.toString() );
+}
+
+
 void connectToMqtt() {
 
     String mqttServer = readString( "server", "");
@@ -356,6 +393,8 @@ void onMqttConnect( bool sessionPresent) {
     delay(1000);
 
     initPubSub();
+
+    publishInfo();
 
     if ( !firstConnectAfterBoot){
         Serial.println( "Timer for re-publish all states started...");
@@ -470,30 +509,6 @@ void initMqttTopics(){
 
     Topic.Results   = TopicGlobal.Main + "/results";
     
-}
-
-
-
-String getLocalTime(){
-
-    struct tm timeinfo;
-    delay( 500);
-    if( !getLocalTime( &timeinfo)){
-        Serial.println("Failed to obtain time (1st)!");
-        delay( 2000);
-        if( !getLocalTime( &timeinfo)){
-            Serial.println("Failed to obtain time (2nd)!");
-            delay( 4000);
-            if( !getLocalTime( &timeinfo)){
-                Serial.println("Failed to obtain time (3rd)!");
-                return "Error-Getting-Time";
-            }
-        }
-    }
-    char timeStringBuff[50]; //50 chars should be enough
-    strftime(timeStringBuff, sizeof(timeStringBuff), "%B %d %Y %H:%M", &timeinfo);
-    String asString(timeStringBuff);
-    return asString;
 }
 
 
@@ -628,24 +643,6 @@ void setup() {
 
         #ifdef DEBUG
             Serial.println(">>> Init OTA webserver done.");
-        #endif
-
-        // --------------------- Get actual time and publish info ---------------------
-
-        #ifdef DEBUG
-            Serial.println(">>> Init boot-time ...");
-        #endif
-
-        configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-        Info.bootTime = getLocalTime();
-        Info.model = deviceModel;
-        pub( Topic.Info, Info.toString() );
-        delay(250);
-        // Send two times to get non-empty ioBroker entry
-        pub( Topic.Info, Info.toString() );
-
-        #ifdef DEBUG
-            Serial.println(">>> Init boot-time done.");
         #endif
     }
 
