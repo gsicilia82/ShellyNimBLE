@@ -86,16 +86,12 @@ void Shelly::initMqttTopics(){
 
 void Shelly::initPubSub(){
 
-    for(int i=0; i < Topic.Relay.size(); i++){
-        mqttClient.unsubscribe(Topic.Relay[i].c_str() );
-    }
-
     for (int i = 0; i < 2; i++) {
-        for(int i=0; i < Topic.Input.size(); i++){
-            pub( Topic.Input[i], digitalRead( Pin.Input[i] ) );
+        for(int j=0; j < Topic.Input.size(); j++){
+            pub( Topic.Input[j], digitalRead( Pin.Input[j] ) );
         }
-        for(int i=0; i < Topic.Relay.size(); i++){
-            pub( Topic.Relay[i], digitalRead( Pin.Relay[i] ) );
+        for(int j=0; j < Topic.Relay.size(); j++){
+            pub( Topic.Relay[j], digitalRead( Pin.Relay[j] ), true);
         }
         if( i==0) delay(500);
     }
@@ -614,7 +610,7 @@ void Shelly2PM::coverCalibrateRoutine(){
         case LOWER_CHKPWR_0W:
             if ( Energy.powerAcc < limPowLow){
                 calibTimer1 = millis() - calibTimer1;
-                float fTmp = calibTimer1 / 1000;
+                fTmp = calibTimer1 / 1000;
                 report("Stop timer calib1. Down Position reached after [s]: " + String( fTmp) );
                 coverCalibState = DOWN_REACHED;
             }
@@ -951,8 +947,6 @@ void Shelly1PM::initPubSub(){
     Shelly::initPubSub();
     String JsonUserConfig = getJsonFromConfig();
 
-    mqttClient.unsubscribe(Topic.Config.c_str() );
-
     for ( int i = 0; i < 2; i++) {
         pub( Topic.Config, JsonUserConfig, true);
         if( i==0) delay(500);
@@ -1009,7 +1003,7 @@ bool Shelly1PM::onMqttMessage(String& topic, String& pay){
     #endif
 
     if (topic == Topic.Relay[0]) {
-        bool res = setRelay( 1, stringToBool( pay) );
+        setRelay( 1, stringToBool( pay) );
         report( "Successfully set relay to state: " + pay);
     }
     else if (topic == Topic.Config) {
