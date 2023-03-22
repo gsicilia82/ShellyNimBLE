@@ -99,7 +99,6 @@ class Shelly2PM : public Shelly{
             String Light = "Light";
         } deviceMode;
 
-        bool measEnergy = false;
         int measIntervall = 5000; // 500ms in case of COVER mode, set during setup()
 
         // Auto detect pcb version with reset pin in setup()
@@ -181,18 +180,18 @@ class Shelly2PM : public Shelly{
 
         void extendBaseConfig();
         void overwriteBaseConfig();
-        void initMqttTopics();
-        String getJsonFromConfig();
-        bool setConfigFromJson( String JsonConfig, bool withPub=true);
+        void initMqttTopics() override;
+        String getJsonFromConfig() override;
+        bool setConfigFromJson( String JsonConfig, bool withPub=true) override;
         bool parseJsonConfig();
-        void workInput( int input, bool state);
-        void workReset();
+        void workInput( int input, bool state) override;
+        void workReset() override;
         
     public:
-        void setup();
-        void initPubSub();
-        bool onMqttMessage( String& topic, String& pay);
-        void loop();
+        void setup() override;
+        void initPubSub() override;
+        bool onMqttMessage( String& topic, String& pay) override;
+        void loop() override;
 };
 
 
@@ -201,18 +200,18 @@ class Shelly1PM : public Shelly{
     private:
         void extendBaseConfig();
         void overwriteBaseConfig();
-        void initMqttTopics();
-        String getJsonFromConfig();
-        bool setConfigFromJson( String JsonConfig, bool withPub=true);
+        void initMqttTopics() override;
+        String getJsonFromConfig() override;
+        bool setConfigFromJson( String JsonConfig, bool withPub=true) override;
         bool parseJsonConfig();
-        void workInput( int input, bool state);
-        void workReset();
+        void workInput( int input, bool state) override;
+        void workReset() override;
         
     public:
-        void setup();
-        void initPubSub();
-        bool onMqttMessage( String& topic, String& pay);
-        void loop();
+        void setup() override;
+        void initPubSub() override;
+        bool onMqttMessage( String& topic, String& pay) override;
+        void loop() override;
 };
 
 class Shellyi4 : public Shelly{
@@ -220,15 +219,15 @@ class Shellyi4 : public Shelly{
     private:
         void extendBaseConfig();
         void overwriteBaseConfig();
-        void initMqttTopics();
-        String getJsonFromConfig();
-        bool setConfigFromJson( String JsonConfig, bool withPub=true);
-        void workInput( int input, bool state);
-        void workReset();
+        void initMqttTopics() override;
+        String getJsonFromConfig() override;
+        bool setConfigFromJson( String JsonConfig, bool withPub=true) override;
+        void workInput( int input, bool state) override;
+        void workReset() override;
         
     public:
-        void setup();
-        void initPubSub();
-        bool onMqttMessage( String& topic, String& pay);
-        void loop();
+        void setup() override;
+        void initPubSub() override;
+        bool onMqttMessage( String& topic, String& pay) override;
+        void loop() override;
 };
