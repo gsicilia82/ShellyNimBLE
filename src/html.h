@@ -139,9 +139,9 @@ const char captive_html[] PROGMEM = R"rawliteral(
                 <td>Input 1:</td>
                 <td>
                     <select id="input1" name="input1">
-                        <option selected="selected" value=Switch>Switch</option>
-                        <option value=Button>Button</option>
-                        <option value=Detached>Detached</option>
+                        <option selected="selected" value=SWITCH>SWITCH</option>
+                        <option value=BUTTON>BUTTON</option>
+                        <option value=DETACHED>DETACHED</option>
                     </select>
                 </td>
             </tr>
@@ -149,9 +149,9 @@ const char captive_html[] PROGMEM = R"rawliteral(
                 <td>Input 2:</td>
                 <td>
                     <select id="input2" name="input2">
-                        <option selected="selected" value=Switch>Switch</option>
-                        <option value=Button>Button</option>
-                        <option value=Detached>Detached</option>
+                        <option selected="selected" value=SWITCH>SWITCH</option>
+                        <option value=BUTTON>BUTTON</option>
+                        <option value=DETACHED>DETACHED</option>
                     </select>
                 </td>
             </tr>
