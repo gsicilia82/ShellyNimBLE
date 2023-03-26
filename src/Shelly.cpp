@@ -19,6 +19,9 @@ bool Shelly::getRelayState( int relay){
     #ifdef DEBUG
         Serial.println(">>> Called Shelly::getRelayState()");
     #endif
+    #ifdef DEBUG_PUB
+        pub( TopicGlobal.dbg + "getRelayState", "Relay: " + String( relay) );
+    #endif
     
     return digitalRead( Pin.Relay[ relay] );
 }
@@ -67,6 +70,10 @@ bool Shelly::setRelay( int relay, bool state, int openRelay /* =-1 */){
 }
 
 bool Shelly::toggleRelay( int relay, int openRelay /* =-1 */){
+    #ifdef DEBUG_PUB
+        pub( TopicGlobal.dbg + "toggleRelay", "Relay: " + String( relay) + " | OpenRelay: " + String( openRelay) );
+    #endif
+
     return setRelay( relay, !getRelayState( relay), openRelay);
 }
 
@@ -982,7 +989,7 @@ bool Shelly1PM::onMqttMessage(String& topic, String& pay){
     #endif
 
     if (topic == Topic.Relay[0]) {
-        setRelay( 1, stringToBool( pay) );
+        setRelay( 0, stringToBool( pay) );
         report( "Successfully set relay to state: " + pay);
     }
     else if (topic == Topic.Config) {
@@ -1003,6 +1010,9 @@ bool Shelly1PM::onMqttMessage(String& topic, String& pay){
 }
 
 void Shelly1PM::workInput( int input, bool state){
+    #ifdef DEBUG_PUB
+        pub( TopicGlobal.dbg + "workInput", "Input: " + String( input) + " | State: " + String( state) );
+    #endif
     if ( SwitchMode[ input] == "SWITCH"){
         toggleRelay( input);
     }
