@@ -272,9 +272,9 @@ void Shelly2PM::setup(){
         digitalWrite( Pin.Relay[i], LOW);
     }
 
-    // Init Reset button variables
+    // Init Reset button variables.
     pinMode( Pin.ButtonReset, INPUT_PULLUP);
-    Switch[ Pin.Input.size() ].switchLastState = Switch[ Pin.Input.size() ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
+    Switch[ Switch.size()-1 ].switchLastState = Switch[ Switch.size()-1 ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
     
     initMqttTopics();
 
@@ -889,7 +889,7 @@ void Shelly1PM::setup(){
 
     // Init Reset button variables
     pinMode( Pin.ButtonReset, INPUT_PULLUP);
-    Switch[ Pin.Input.size() ].switchLastState = Switch[ Pin.Input.size() ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
+    Switch[ Switch.size()-1 ].switchLastState = Switch[ Switch.size()-1 ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
 
     initMqttTopics();
 }
@@ -1066,7 +1066,7 @@ void Shellyi4::setup(){
 
     // Init Reset button variables
     pinMode( Pin.ButtonReset, INPUT_PULLUP);
-    Switch[ Pin.Input.size() ].switchLastState = Switch[ Pin.Input.size() ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
+    Switch[ Switch.size()-1 ].switchLastState = Switch[ Switch.size()-1 ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
 
     initMqttTopics();
 }
