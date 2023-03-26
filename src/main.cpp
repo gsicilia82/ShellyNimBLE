@@ -679,16 +679,20 @@ void loop() {
 
         // --------------------- Loop Shelly ---------------------
 
-        shelly->loop();
+        static unsigned long shellyLoop = 0;
+        if ( millis() - shellyLoop > 100){
+            shellyLoop = millis();
+            shelly->loop();
+        }
 
         // --------------------- Slow Loop ---------------------
 
-         static unsigned long lastSlowLoop = 0;
-         if ( millis() - lastSlowLoop > 60000){
+        static unsigned long lastSlowLoop = 0;
+        if ( millis() - lastSlowLoop > 60000){
             lastSlowLoop = millis();
             Serial.printf("Free memory heap: %u bytes free\r\n", ESP.getFreeHeap() );
             pub( Topic.Online, "true");
-         }
+        }
 
     }
 
