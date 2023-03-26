@@ -686,6 +686,7 @@ void loop() {
          static unsigned long lastSlowLoop = 0;
          if ( millis() - lastSlowLoop > 60000){
             lastSlowLoop = millis();
+            Serial.printf("Free memory heap: %u bytes free\r\n", ESP.getFreeHeap() );
             pub( Topic.Online, "true");
          }
 
