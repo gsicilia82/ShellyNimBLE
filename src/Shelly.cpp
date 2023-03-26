@@ -10,6 +10,7 @@ START: Parent Class Shelly
 
 Shelly::Shelly(){}
 
+// Reads userconfig from NVM, if exists updates Userconfig variables
 void Shelly::setup(){
     updateConfigFromNVM();
 }
@@ -242,13 +243,13 @@ void Shelly2PM::setup(){
     pinMode( 4, INPUT_PULLUP); // v0.1.9
     if ( digitalRead( 4) == LOW){
         pcbVersion = "v0.1.9";
-        Serial.println(">>> Auto-Detected PCB Version: " + pcbVersion);
+        Serial.println("Auto-Detected PCB Version: " + pcbVersion);
     }
     else {
         pinMode( 27, INPUT_PULLUP); // v0.1.5
         if ( digitalRead( 27) == LOW){
             pcbVersion = "v0.1.5";
-            Serial.println(">>> Auto-Detected PCB Version: " + pcbVersion);
+            Serial.println("Auto-Detected PCB Version: " + pcbVersion);
         }
     }
 
@@ -273,7 +274,7 @@ void Shelly2PM::setup(){
 
     // Init Reset button variables
     pinMode( Pin.ButtonReset, INPUT_PULLUP);
-    Switch[2].switchLastState = Switch[2].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
+    Switch[ Pin.Input.size() ].switchLastState = Switch[ Pin.Input.size() ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
     
     initMqttTopics();
 
@@ -377,10 +378,9 @@ void Shelly2PM::initPubSub(){
     #endif
 
     Shelly::initPubSub();
-    String JsonUserConfig = getJsonFromConfig();
 
     for ( int i = 0; i < 2; i++) {
-        pub( Topic.Config, JsonUserConfig, true);
+        pub( Topic.Config, getJsonFromConfig(), true);
         pub( Topic.Power[0] , "0");
         pub( Topic.Power[1] , "0");
         pub( Topic.PowerAcc , "0");
@@ -889,8 +889,8 @@ void Shelly1PM::setup(){
 
     // Init Reset button variables
     pinMode( Pin.ButtonReset, INPUT_PULLUP);
-    Switch[2].switchLastState = Switch[2].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
-    
+    Switch[ Pin.Input.size() ].switchLastState = Switch[ Pin.Input.size() ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
+
     initMqttTopics();
 }
 
@@ -945,10 +945,9 @@ void Shelly1PM::initPubSub(){
     #endif
 
     Shelly::initPubSub();
-    String JsonUserConfig = getJsonFromConfig();
 
     for ( int i = 0; i < 2; i++) {
-        pub( Topic.Config, JsonUserConfig, true);
+        pub( Topic.Config, getJsonFromConfig(), true);
         if( i==0) delay(500);
     }
 
@@ -1067,7 +1066,7 @@ void Shellyi4::setup(){
 
     // Init Reset button variables
     pinMode( Pin.ButtonReset, INPUT_PULLUP);
-    Switch[2].switchLastState = Switch[2].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
+    Switch[ Pin.Input.size() ].switchLastState = Switch[ Pin.Input.size() ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
 
     initMqttTopics();
 }
