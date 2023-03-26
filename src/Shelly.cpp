@@ -237,30 +237,10 @@ void Shelly2PM::setup(){
     }
     else measIntervall = 5000;
 
-    // Auto-Detect Shelly2PM pcb version by pushing reset button during boot (v0.1.5 || v0.1.9)
-    Serial.println("Auto-Detecting Shelly PCB Version by pressing reset button...");
-    String pcbVersion = "";
-    pinMode( 4, INPUT_PULLUP); // v0.1.9
-    if ( digitalRead( 4) == LOW){
-        pcbVersion = "v0.1.9";
-        Serial.println("Auto-Detected PCB Version: " + pcbVersion);
-    }
-    else {
-        pinMode( 27, INPUT_PULLUP); // v0.1.5
-        if ( digitalRead( 27) == LOW){
-            pcbVersion = "v0.1.5";
-            Serial.println("Auto-Detected PCB Version: " + pcbVersion);
-        }
-    }
-
-    if ( pcbVersion == "") Serial.println("Auto-Detecting Shelly PCB Version failed. Using default/saved configuration");
-    else UserConfig.is_V019 = pcbVersion == "v0.1.9" ? true : false;
-
     // Modify variables from base class: modify Pin, extend Switch, extend SwitchMode
     overwriteBaseConfig();
 
     saveConfigToNVM();
-
 
     // Init Switches and Relays
     for(int i=0; i < Pin.Input.size(); i++){
