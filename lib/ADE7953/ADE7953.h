@@ -16,11 +16,13 @@ class ADE7953 {
   public:
     ADE7953();
     void initialize( int SCL, int SDA);
+    void reset( int pinReset);
     ENERGY getData();
   
   private:
   	int _SCL;
 	  int _SDA;
+    int _Reset;
 };
 
 #endif
