@@ -20,7 +20,7 @@ class ADE7953 {
   
   private:
   	int _SCL;
-	int _SDA;
+	  int _SDA;
 };
 
 #endif
