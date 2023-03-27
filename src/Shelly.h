@@ -89,7 +89,7 @@ class Shelly2PM : public Shelly{
         struct USERCONFIG {
             bool SwapInput = false;
             bool SwapOutput = false;
-            bool is_V019 = true;
+            bool is_V019 = false;
         } UserConfig;
 
         struct DEVMODE {
