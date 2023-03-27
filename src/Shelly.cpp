@@ -265,6 +265,9 @@ void Shelly2PM::setup(){
     
     initMqttTopics();
 
+    #ifdef DEBUG
+        Serial.printf(">>> Init ADE7953 with PINs: SCL=%d; SDA=%d \n", Pin.I2C_SCL, Pin.I2C_SDA);
+    #endif
     myADE7953.initialize( Pin.I2C_SCL, Pin.I2C_SDA);
 }
 
@@ -797,7 +800,7 @@ void Shelly2PM::loop(){
         
         Energy = myADE7953.getData();
 
-        #ifdef DEBUG
+        #ifdef DEBUG_PUB
             pub( TopicGlobal.dbg+"voltage0", String( Energy.voltage[0] ) );
             pub( TopicGlobal.dbg+"current0", String( Energy.current[0] ) );
             pub( TopicGlobal.dbg+"voltage1", String( Energy.voltage[1] ) );
