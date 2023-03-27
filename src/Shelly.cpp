@@ -247,6 +247,12 @@ void Shelly2PM::setup(){
     // Modify variables from base class: modify Pin, extend Switch, extend SwitchMode
     overwriteBaseConfig();
 
+    bool pcbAutoDetected = readInt( "pcbAutoDetected", 0);
+    // Autodetect works only if starting with v1.0.5 cause of reset pin in v1.0.9 (missing in v1.0.5!)
+    // Works only if connected to main power supply (U>0V) !!!
+    if ( !pcbAutoDetected) detectPcbVersion();
+    else myADE7953.initialize( Pin.I2C_SCL, Pin.I2C_SDA);
+
     saveConfigToNVM();
 
     // Init Switches and Relays
@@ -264,12 +270,54 @@ void Shelly2PM::setup(){
     Switch[ Switch.size()-1 ].switchLastState = Switch[ Switch.size()-1 ].switchState = digitalRead( Pin.ButtonReset ) == HIGH;
     
     initMqttTopics();
+}
 
+void Shelly2PM::detectPcbVersion(){
     #ifdef DEBUG
+        Serial.println(">>> Called Shelly2PM::detectPcbVersionByAde()");
         Serial.printf(">>> Init ADE7953 with PINs: SCL=%d; SDA=%d \n", Pin.I2C_SCL, Pin.I2C_SDA);
     #endif
-    myADE7953.reset( 33);
-    myADE7953.initialize( Pin.I2C_SCL, Pin.I2C_SDA);
+
+    // Init with v0.1.5 config
+    if ( !readInt( "isCheckedV015", 0) ){
+        writeInt( "isCheckedV015", 1);
+        UserConfig.is_V019 = false;
+        overwriteBaseConfig();
+        saveConfigToNVM();
+        myADE7953.initialize( Pin.I2C_SCL, Pin.I2C_SDA);
+        delay(500);
+        Energy = myADE7953.getData();
+        if (Energy.voltage[0] > 0){
+            Serial.printf("Auto detected PCB version v0.1.5! Measured voltage: %fV \n", Energy.voltage[0]);
+            writeInt( "pcbAutoDetected", 1);
+            return;
+        }
+        else {
+            Serial.println("Detecting PCB version v0.1.5 failed, continue with next version after restart...");
+            restartDevice();
+        }
+    }
+    else if ( !readInt( "isCheckedV019", 0) ){
+        writeInt( "isCheckedV019", 1);
+        myADE7953.reset( 33);
+        UserConfig.is_V019 = true;
+        overwriteBaseConfig();
+        saveConfigToNVM();
+        myADE7953.initialize( Pin.I2C_SCL, Pin.I2C_SDA);
+        Energy = myADE7953.getData();
+        if (Energy.voltage[0] > 0){
+            Serial.printf("Auto detected PCB version v0.1.9! Measured voltage: %fV \n", Energy.voltage[0]);
+            writeInt( "pcbAutoDetected", 1);
+            return;
+        }
+        else {
+            Serial.println("Detecting PCB version v0.1.9 failed...");
+        }
+    }
+    else {
+        writeInt( "pcbAutoDetected", 1);
+        Serial.println("Auto detecting PCB version failed: No power supply measured! Try again after connecting to power supplay and hard-reset!");
+    }
 }
 
 void Shelly2PM::extendBaseConfig(){
@@ -454,7 +502,7 @@ bool Shelly2PM::setConfigFromJson( String JsonConfig, bool withPub /* =true */){
 
 // "opening" || "closing": Calculates coverTargetTime related to coverTargetPosition
 // "stopped": Calculates coverPosition
-void Shelly2PM::calcCoverPosition( String cmd, int coverTargetPosition /* =100 */){ //opening, closing, stopped
+void Shelly2PM::calcCoverPosition( String cmd, int coverTargetPosition /* =-1 */){ //opening, closing, stopped
     #ifdef DEBUG
         Serial.printf(">>> Called Shelly2PM::calcCoverPosition() with: cmd=%s, coverTargetPosition=%d \n", cmd, coverTargetPosition);
     #endif
@@ -477,37 +525,42 @@ void Shelly2PM::calcCoverPosition( String cmd, int coverTargetPosition /* =100 *
             coverPosition = 50;
         }
         isCoverDir = cmd;
+
+        // overwrite calculated position with regular target, avoid small diff between target and calculated value
+        if ( coverTargetPosition != -1) coverPosition = coverTargetPosition; 
         writeInt( "coverPosition", coverPosition);
         pub( Topic.CoverPosSet, String( coverPosition), true);
     }
     else if ( cmd == coverDirs.opening){
         // activate loop statement and set time limit in loop observation
         coverStartTime = millis();
+        regularCoverTarget = coverTargetPosition;
         if ( coverCalibState == CALIBRATED){
             coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverTargetPosition - coverPosition) / 100 ;
             if ( coverTargetPosition == 100) coverTargetTime += 2000;
         }
         else {
-            coverTargetTime = coverStartTime + ( 100*1000); // default 100s if not calibrated
+            coverTargetTime = coverStartTime + ( 100*1000); // default max 100s if not calibrated
         }
         isCoverDir = cmd; // enable time measurement in loop()
     }
     else if ( cmd == coverDirs.closing){
         // activate loop statement and set time limit in loop observation
         coverStartTime = millis();
+        regularCoverTarget = coverTargetPosition;
         if ( coverCalibState == CALIBRATED){
             coverTargetTime = coverStartTime + ( coverMaxTime*1000) * ( coverPosition - coverTargetPosition) / 100 ;
             if ( coverTargetPosition == 0) coverTargetTime += 2000;
         }
         else {
-            coverTargetTime = coverStartTime + ( 100*1000); // default 100s if not calibrated
+            coverTargetTime = coverStartTime + ( 100*1000); // default max 100s if not calibrated
         }
         isCoverDir = cmd; // enable time measurement in loop()
     }
 
 }
 
-bool Shelly2PM::stopCover(){ // returns false if already stopped, otherwise true
+bool Shelly2PM::stopCover( bool regularReached /* =false */){ // returns false if already stopped, otherwise true
     #ifdef DEBUG
         Serial.printf(">>> Called Shelly2PM::stopCover(). Actual direction is: %s \n", isCoverDir);
     #endif
@@ -520,7 +573,8 @@ bool Shelly2PM::stopCover(){ // returns false if already stopped, otherwise true
     else if ( isCoverDir == coverDirs.closing){
         setRelay( 1, false);
     }
-    calcCoverPosition( coverDirs.stopped);
+    if ( regularReached) calcCoverPosition( coverDirs.stopped, regularCoverTarget);
+    else calcCoverPosition( coverDirs.stopped);
 
     pub( Topic.Power[0], "0");
     pub( Topic.Power[1], "0");
@@ -840,7 +894,7 @@ void Shelly2PM::loop(){
             #ifdef DEBUG
                 Serial.printf("Cover timer or power measurement triggered. Power: %f \n", Energy.powerAcc);
             #endif
-            stopCover();
+            stopCover( true);
         }
     }
 

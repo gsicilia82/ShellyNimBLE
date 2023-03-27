@@ -101,9 +101,6 @@ class Shelly2PM : public Shelly{
 
         int measIntervall = 5000; // 500ms in case of COVER mode, set during setup()
 
-        // Auto detect pcb version with reset pin in setup()
-        // String pcbVersion = "v0.1.9"; // "v0.1.5" || "v0.1.9"
-
         // ##########################
         // Needed only in COVER mode
         // ##########################
@@ -114,8 +111,8 @@ class Shelly2PM : public Shelly{
 
         unsigned long coverStartTime = 0;  // Time when COVER was triggered to go UP/DOWN
         unsigned long coverTargetTime = 0; // Max time, when end position should be reached
-        
         int coverPosition = 50;            // default value; real value from non-volatile memory
+        int regularCoverTarget = 100;
 
         String isCoverDir = "stopped";
 
@@ -168,8 +165,8 @@ class Shelly2PM : public Shelly{
         int limPowLow = 15;
 
 
-        void calcCoverPosition( String cmd, int coverTargetPosition=100);
-        bool stopCover();
+        void calcCoverPosition( String cmd, int coverTargetPosition=-1);
+        bool stopCover( bool regularReached=false);
         bool isCalibRunning();
         void stopCalibration( String msg="");
         void coverCalibrateRoutine();
@@ -180,6 +177,7 @@ class Shelly2PM : public Shelly{
 
         void extendBaseConfig();
         void overwriteBaseConfig();
+        void detectPcbVersion();
         void initMqttTopics() override;
         String getJsonFromConfig() override;
         bool setConfigFromJson( String JsonConfig, bool withPub=true) override;
