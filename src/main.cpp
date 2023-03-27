@@ -130,7 +130,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
         if ( pay == "true"){
             pub( Topic.HardReset, "false", true);
             clearPreferences();
-            delay(2500);
+            delay(1000);
             restartDevice();
         }
     }
