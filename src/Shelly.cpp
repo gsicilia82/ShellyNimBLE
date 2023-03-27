@@ -268,6 +268,7 @@ void Shelly2PM::setup(){
     #ifdef DEBUG
         Serial.printf(">>> Init ADE7953 with PINs: SCL=%d; SDA=%d \n", Pin.I2C_SCL, Pin.I2C_SDA);
     #endif
+    myADE7953.reset( 33);
     myADE7953.initialize( Pin.I2C_SCL, Pin.I2C_SDA);
 }
 
@@ -734,11 +735,14 @@ bool Shelly2PM::onMqttMessage(String& topic, String& pay){
         if ( convertOk){
             saveConfigToNVM();
             report( "New config saved to memory. Reboot triggered!");
-            delay( 2000);
+            delay(1000);
             restartDevice();
         }
         else {
             pub( Topic.Config, getJsonFromConfig(), true);
+            report( "Error in new config. Restoring old config by reboot!");
+            delay(1000);
+            restartDevice();
         }
     }
     else return false; // command unknown
