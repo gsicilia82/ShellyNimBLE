@@ -314,6 +314,14 @@ void ADE7953::initialize( int SCL, int SDA) {
   }
 }
 
+void ADE7953::reset( int pinReset){
+
+  pinMode(pinReset, OUTPUT);                    // Reset pin ADE7953
+  digitalWrite(pinReset, 0);
+  delay(100);                                      // To initiate a hardware reset, this pin must be brought low for a minimum of 10 μs.
+  digitalWrite(pinReset, 1);
+}
+
 ENERGY ADE7953::getData() {
   uint32_t acc_mode = 0;
   int32_t reg[2][ADE7953_REGISTERS];

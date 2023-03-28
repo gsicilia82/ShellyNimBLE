@@ -6,7 +6,7 @@ Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Li
 Mit der aktuellen Version können BLE Geräte über ihre MAC oder, wenn vorhanden, über ihre iBeacon UUID gescannt und gefiltert werden (Funktion als Whitelist). 
 
 * [ioBroker States Übersicht](#ioBroker-States-Übersicht)
-* [MQTT Konfiguration](#mqtt-konfiguration)
+* [MQTT Konfiguration ioBroker](#mqtt-konfiguration-ioBroker)
 * [Firmware Binaries unter Releases](#Firmware-Binaries-unter-Releases)
 * [Erstmalig Flashen mit esptool](#Erstmalig-Flashen-mit-esptool)
 * [Erstmalig Flashen mit PlatformIO](#Erstmalig-Flashen-mit-PlatformIO)
@@ -25,11 +25,13 @@ Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT In
 
 Im State `mqtt-client.0.shellyscanner.devices.*.Filter` können bis zu 10 MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden. Außerdem können optional Aliase vergeben werden. Nach dem Flashprozess ist ein Beispiel im State hinterlegt.
 
-## MQTT Konfiguration
+## MQTT Konfiguration ioBroker
+
+Ich verwende Mosquitto als MQTT server und verwende unter ioBroker den Adapter MQTT-Client. Ein Versuch von Mosquitto auf ioBroker MQTT-Server zu wechseln, war gescheitert.
 
 Es wird empfohlen, dass zunächst die ioBroker MQTT Instanz konfiguriert wird und anschließend das Flashen erfolgt.
 
-Damit die States von ioBroker erkannt werden, muss unter der MQTT Instanz eine Subscription auf `shellyscanner/#` eingestellt werden:
+Damit die States von ioBroker erkannt werden, muss unter der MQTT Client Instanz eine Subscription auf `shellyscanner/#` eingestellt werden:
 
 ![ ](pictures/iobroker/010_iobroker_mqtt_subscriptions.png  "ioBroker MQTT")
 
@@ -51,7 +53,7 @@ Publish sollte für alle States, außer den nachfolgenden erledigt werden:
 
 **Für die einfache Konfiguration der States habe ich ein JavaScript für ioBroker erstellt, siehe weiter unter:**  [JavaScript für Optimierung der MQTT States](#JavaScript-f%C3%BCr-Optimierung-der-MQTT-States)
 
-**Vor Anwendung des Skripts sollte zumindest geprüft werden, dass die MQTT Optionen - wie in den Screenshots zu sehen - vorhanden sind.**
+**Vor Anwendung des Skripts sollte zumindest einamilg geprüft werden, dass die MQTT Optionen - wie in den Screenshots zu sehen - vorhanden sind.**
 
 ## Firmware Binaries unter Releases
 
@@ -61,7 +63,7 @@ Zu jedem Release werden zwei Dateien hinzugefügt:
 
 * firmware_update.bin
 
-Wenn **erstmalig** mit esptool geflasht wird, muss **firmware_full.bin** verwendet werden. Hier sind alle benötigten Partitionen vorhanden, weshalb diese Binary eine Größe von 4MB aufweist.
+Wenn **erstmalig** mit esptool geflasht wird, muss **firmware_full.bin** verwendet werden. Hier sind alle benötigten Partitionen vorhanden, weshalb diese Binary eine Größe von genau 4MB aufweist.
 
 Zukünftige **Updates** können über die **WebUI** des Shelly erfolgen. Es ist eine simple OTA Funktionalität integriert. Hier wird dann die **firmware_update.bin** verwendet, damit Einstellungen, wie die Konfiguration, Filter, WIFI etc. beibehalten werden.
 
@@ -128,7 +130,7 @@ Für den OTA Flashvorgang muss aus den Releases die `firmware_update.bin` verwen
 
 Wenn der Shelly erfolgreich geflasht wurde, wird mit dem ersten boot ein AccessPoint mit dem Namen `esp32-Shelly` gestartet. Bitte mit diesem verbinden, eine Weiterleitung sollte automatisch erfolgen, ansonsten im Browser die IP `192.168.4.1` aufrufen.
 
-<u>Hier müssen alle notwendigen Daten eingegeben werden</u>
+<u>Hier müssen alle notwendigen Daten eingegeben bzw. ausgewählt werden</u>
 
 (Die Felder sind für schnellere Tests fast alle vorbelegt)
 
@@ -136,71 +138,33 @@ Wenn der Shelly erfolgreich geflasht wurde, wird mit dem ersten boot ein AccessP
 
 * **WIFI und MQTT** Daten sind selbsterklärend
 
-* Der **Device Name** wird als Bestandteil der MQTT Topics verwendet. Dieser sagt somit aus, unter welchem Namen dieses Gerät später zu sehen ist.
+* Der **Device Name** wird als Bestandteil der MQTT Topics verwendet. Dieser sagt somit aus, unter welchem Namen dieses Gerät später zu sehen ist. Als Sonderzeichen ist hier ausschließlich Unterstrich "_" erlaubt.
 
-* In **Device Mode** kann zwischen LIGHT und COVER gewählt werden. Bei Shelly Plus 1(PM) ist nur der Modus LIGHT sinnvoll. Bei den 2PM Modellen ist es je nach Einsatzzweck zu wählen.
+* Die weiteren Optionen sind selbsterklärend. Die Model-Auswahl und bei Shelly-Plus-2PM der Modus (Cover / Light) können nur über dieses Menü eingestellt werden. Im laufenden Betrieb können die Inpts weiterhin zwischen Switch und Button verändert werden.
 
-Die bis hier angegebenen Daten können später nicht mehr geändert werden. Dies ist dann nur nach einem HardReset möglich (oder nach Erase-Flash und neu Flashen über PlatformIO o.ä.)
+Wenn zu einem späteren Zeitpunkt dieses Menü aufgerufen werden soll, ist dies ausschlielich über ein HardReset möglich. Ein Hard-Reset ist möglich über
 
-Im Eingabebereich **Config** muss ein Konfigurationsprofil hinterlegt, je nachdem welches Shelly Modell verwendet wird. Wird hier keine gültige Config hinterlegt, wird automatisch "Shelly Plus 2PM v0.1.9" gewählt.
+* Reset-Taste am Shelly ([Reset-Taste am Shelly](#Reset-Taste-am-Shelly))
 
-Nachfolgend dargestellte Profile können aktuell eingesetzt werden. Einfach das passende kopieren und in den Config-Bereich eingeben.
+* den ioBroker State HardReset
 
-Diese Profile können auch später im Einsatz über MQTT angepasst werden. Es kann der Bedarf bestehen, dass die Eingangs- oder Ausgangs-Pins vertauscht werden; dies kann über diese Config geschehen.
+* esptool / PlatformIO mit erase-flash
 
-In ioBroker wird die Config z.B. über `mqtt-client.0.shellyscanner.devices.*.Config`dargestellt und kann auch hierüber angepasst werden.
 
-Für SwitchX_Mode sind folgende Inhalte möglich: Switch, Button, Detached.
 
-Wird eine fehlerhafte Config übergeben, wird die Standard Config für Shelly Plus 2PM geladen.
+Es kann der Bedarf bestehen, dass die Eingangs- oder Ausgangs-Pins des Shelly vertauscht werden; dies kann über den ioBroker State`mqtt-client.0.shellyscanner.devices.*.Config`erfolgen. Je nach Shelly Modell sind hier als JSON mehrere Optionen hinterlegt. Die meisten Optionen bietet der Shelly-Plus-2PM:
 
-```javascript
-{  
-"Config": "Shelly Plus 2PM v0.1.9",
-"ButtonReset": 4,
-"Switch1": 5,
-"Switch1_Mode": "Switch",
-"Switch2": 18,
-"Switch2_Mode": "Switch",
-"Relay1": 13,
-"Relay2": 12,
-"I2C_SCL": 25,
-"I2C_SDA": 26,
-"ADE7953": 27
+```js
+{
+  "Mode_Input1": "SWITCH", /* SWITCH / BUTTON */
+  "Mode_Input2": "SWITCH", /* SWITCH / BUTTON */
+  "SwapInput":   true,     /* true / false */
+  "SwapOutput":  false,    /* true / false */
+  "is_V019":     false     /* true / false */
 }
 ```
 
-```javascript
-{  
-"Config": "Shelly Plus 2PM v0.1.5",
-"ButtonReset": 27,
-"Switch1": 2,
-"Switch1_Mode": "Switch",
-"Switch2": 18,
-"Switch2_Mode": "Switch",
-"Relay1": 13,
-"Relay2": 12,
-"I2C_SCL": 25,
-"I2C_SDA": 33,
-"ADE7953": 36
-}
-```
-
-```javascript
-{  
-"Config": "Shelly Plus 1(PM) v0.1.9",
-"ButtonReset": 25,
-"Switch1": 4,
-"Switch1_Mode": "Switch",
-"Switch2": -1,
-"Switch2_Mode": "Switch",
-"Relay1": 26,
-"Relay2": -1,
-"I2C_SCL": -1,
-"I2C_SDA": -1,
-"ADE7953": -1
-}
-```
+Beim Shelly-Plus-2PM gibt es zwei verschiedene Platinen-Layouts, die vertrieben werden, v0.1.5 und v0.1.9. Die korrekte Version wird automatisch erkannt, der Shelly erstmalig verwendet wird (erster Boot nach Web-Konfiguration). Wenn die Erkennung nicht korrekt war, kann dies auch über den Congig-State in ioBroker korrigiert werden.
 
 ## Rollladen / COVER
 
@@ -220,15 +184,17 @@ Hinweis: Ein Schalten der beiden Ausgänge gleichzeitig ist seitens Software ver
 
 Wenn MQTT States von ioBroker automatisch generiert werden, sind diese grundsätzlich beschreibbar, publish ist deaktiviert. Ich habe ein kleines Skript geschrieben, dass die States gemäß den Anforderungen konfiguriert, wobei auch die State-Namen den Device-Namen als Präfix erhalten. Dafür muss das Skript in der ioBroker Skript-Engine einmalig ausgeführt werden. Es beendet sich selbst, wenn es durchlief ud muss nochmals gestartet werden, wenn später weitere Shellys hinzukommen.
 
-Dieses Skript funktioniert, wie hier hinterlegt, ausschließlich über die Instanz 0 vom MQTT-Client Adapter. Wenn andere Adapter verwendet werden, muss das Skript entsprechend angepasst werden.
+Dieses Skript funktioniert, wie hier hinterlegt, ausschließlich über die Instanz 0 vom MQTT-Client Adapter. Wenn andere Instanzen verwendet werden, muss das Skript entsprechend angepasst werden.
 
 Eingerichtet wird:
 
-* State Typ auf "boolean" (wenn passend)
+* State-Typ auf "boolean" (wenn passend)
 
 * Aktiviere "publish"  wenn für Shelly Steuerung vorgesehen
 
-* State Attribut auf ReadOnly setzen (wenn passend)
+* State-Attribut auf ReadOnly setzen (wenn passend)
+
+* State-Typ auf "number" bei den RSSI-States
 
 ```javascript
 let arrReadOnly = [
@@ -240,7 +206,21 @@ let arrReadOnly = [
     "Power2",
     "PowerAcc",
     "Switch1",
-    "Switch2"
+    "Switch2",
+    "Switch3",
+    "Switch4"
+]
+
+let arrBooleans = [
+    "HardReset",
+    "Online",
+    "Restart",
+    "SetRelay1",
+    "SetRelay2",
+    "Switch1",
+    "Switch2",
+    "Switch3",
+    "Switch4"
 ]
 
 $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
@@ -248,7 +228,9 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
     let lastItem = splittedID.pop();
     let deviceName = splittedID.pop();
     let obj = getObject( id);
+
     if ( !obj.common.name.includes( deviceName) ) obj.common.name = deviceName + " " + obj.common.name; // change name
+
     if ( arrReadOnly.includes( lastItem) ){
         // disable publish and write access
         obj.common.write = false;
@@ -259,34 +241,53 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
         obj.common.write = true;
         obj.common.custom["mqtt-client.0"].publish = true;
     }
-    
-    if ( getState( id).val == "true" || getState( id).val == "false"){
+
+    if ( arrBooleans.includes( lastItem) ){
         // set boolean mode
         obj.common.type = "boolean";
     }
     
     setObject( id, obj);
+    
+});
+
+$('mqtt-client.0.shellyscanner.results.*').each(function ( id, i) {
+    let splittedID = id.split(".");
+    let lastItem = splittedID.pop();
+    let deviceName = splittedID.pop();
+    let obj = getObject( id);
+
+    if ( obj.common.type === "mixed"){
+        // set boolean mode
+        obj.common.type = "number";
+    }
+
+    setObject( id, obj);
+
 });
 
 stopScript();
+
+// lösche retained messages: mosquitto_pub -t shellyscanner/devices/Licht_Schlafzimmer/Online -n -r -d
 ```
 
 ## Known Bugs
 
-* Ein User hatte nach der erfolgten Erst-Konfiguration über das CaptivePortal ein Boot-Loop. Bisher konnte ich den Fehler weder nachstellen, noch beheben.
+* Ein User hatte nach der erfolgter Erst-Konfiguration über das CaptivePortal ein Boot-Loop. Bisher konnte ich den Fehler weder nachstellen, noch beheben.
 
 * Wenn die Werte im State `mqtt-client.0.shellyscanner.devices.*.Filter` geändert werden, muss ein Neustart des Shelly erfolgen. Ich könnte den Neustart automatisieren, würde aber gern den Fehler beheben.
 
 ## Geplant
 
 * [ ] ioBroker JavaScript erweitern: Lösche States unter "results" wenn zugehöriger Shelly unter "devices" nicht mehr existiert. Z.B. nach HardReset / Umbenennen eines Shelly.
-* [ ] Zeitpunkt der Ersteinrichtung über Info-State mitteilen.
-- [ ] COVER: Beim Anfahren der Endposition anhalten wenn Leistung abfällt.
+* [x] Zeitpunkt der Ersteinrichtung über Info-State mitteilen.
+- [x] COVER: Beim Anfahren der Endposition anhalten wenn Leistung abfällt.
   Aktuell gelöst bei EndPosition "Berechnete Endzeit + 2s". Wenn nicht kalibriert, kein autom. Öffnen der Relais möglich.
 - [ ] COVER: ErrorHandling erweitern, wenn während Kalibriervorgang nie geringe Leistung erreicht wird.
 - [ ] Power Messintervall bei 500ms. Wert 100ms führt zu "task watchdog error". Optimierbar?
 - [ ] MaxPower für Relais einrichten. Über mqtt einstellbar (Persistent sichern).
 - [ ] Temperaturmessung hinzufügen? Öffne Relay wenn Temperatur X überschritten wurde?
+- [ ] OneEuroFilter wie bei Espresense hinzufügen
 
 ---
 
