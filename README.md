@@ -150,8 +150,6 @@ Wenn zu einem späteren Zeitpunkt dieses Menü aufgerufen werden soll, ist dies 
 
 * esptool / PlatformIO mit erase-flash
 
-
-
 Es kann der Bedarf bestehen, dass die Eingangs- oder Ausgangs-Pins des Shelly vertauscht werden; dies kann über den ioBroker State`mqtt-client.0.shellyscanner.devices.*.Config`erfolgen. Je nach Shelly Modell sind hier als JSON mehrere Optionen hinterlegt. Die meisten Optionen bietet der Shelly-Plus-2PM:
 
 ```js
@@ -246,9 +244,9 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
         // set boolean mode
         obj.common.type = "boolean";
     }
-    
+
     setObject( id, obj);
-    
+
 });
 
 $('mqtt-client.0.shellyscanner.results.*').each(function ( id, i) {
@@ -288,6 +286,7 @@ stopScript();
 - [ ] MaxPower für Relais einrichten. Über mqtt einstellbar (Persistent sichern).
 - [ ] Temperaturmessung hinzufügen? Öffne Relay wenn Temperatur X überschritten wurde?
 - [ ] OneEuroFilter wie bei Espresense hinzufügen
+- [ ] Zusätzlich die Distanz anzeigen, oder Distanz statt RSSI?
 
 ---
 
