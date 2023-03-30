@@ -15,17 +15,18 @@ void createBleDevices(){
         char *end_token;
         printf ("Entry token: %s\n", token);
         char *token2 = strtok_r(token, "=", &end_token);
+        vecBleDevices.emplace_back( BleDevice() );
+        size_t last = vecBleDevices.size() - 1;
         int i=0;
-        vecBleDevices.push_back( new BleDevice() );
         while (token2 != NULL)
         {
             printf("Sub tokens = %s\n", token2);
             if (i==0){
-                vecBleDevices[i]->address = token2;
-                vecBleDevices[i]->alias = token2;
+                vecBleDevices[last].address = token2;
+                vecBleDevices[last].alias = token2;
             }
             else if (i==1){
-                vecBleDevices[i]->alias = token2;
+                vecBleDevices[last].alias = token2;
             } 
             token2 = strtok_r(NULL, "=", &end_token);
             i+=1;
@@ -35,10 +36,10 @@ void createBleDevices(){
 
     #ifdef DEBUG
         for(int i=0; i < vecBleDevices.size(); i++){
-            printf("vecBleDevices Alias: %s\n", vecBleDevices[i]->alias.c_str() );
+            printf("vecBleDevices Alias: %s\n", vecBleDevices[i].alias.c_str() );
         }
         for(int i=0; i < vecBleDevices.size(); i++){
-            printf("vecBleDevices Address: %s\n", vecBleDevices[i]->address.c_str() );
+            printf("vecBleDevices Address: %s\n", vecBleDevices[i].address.c_str() );
         }
     #endif
 }
@@ -138,10 +139,10 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
         #endif
         
         for (int i=0; i < vecBleDevices.size(); i++) {
-            if ( sAddress == vecBleDevices[i]->address ){
+            if ( sAddress == vecBleDevices[i].address ){
                 int pos = i;
-                String topic = Topic.Results + "/" + vecBleDevices[i]->alias + "/" + deviceName;
-                auto val = vecBleDevices[i]->getBleValue( advertisedDevice);
+                String topic = Topic.Results + "/" + vecBleDevices[i].alias + "/" + deviceName;
+                auto val = vecBleDevices[i].getBleValue( advertisedDevice);
                 pubFast( topic, String(  val) );
                 #ifdef DEBUG_MQTT
                     Serial.printf("Advertising device to topic <%s> with value: ", topic.c_str() );
