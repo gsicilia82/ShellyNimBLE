@@ -1,44 +1,8 @@
 #include <main.h>
 
-int median_of_3(int a, int b, int c){
+void createBleDevices(){
 
-    int the_max = max(max(a, b), c);
-    int the_min = min(min(a, b), c);
-    // unnecessarily clever code
-    int the_median = the_max ^ the_min ^ a ^ b ^ c;
-    return (the_median);
-}
-
-template <size_t n> void push(int (&arr)[n], int const value) {
-  static size_t index = 0;
-
-  arr[index] = value;
-  index = (index + 1) % n;
-}
-
-template <size_t n> int pop(int (&arr)[n]) {
-  static size_t index = 0;
-
-  int result = arr[index];
-  index = (index + 1) % n;
-  return result;
-}
-
-template <size_t n> void roll(int (&arr)[n]) {
-  static size_t index = 0;
-
-  for (size_t i = 0; i < n; i++) {
-    Serial.print(arr[(index + i) % n]);
-    Serial.print(' ');
-  }
-  Serial.println();
-
-  index = (index + 1) % n;
-}
-
-void filterStringToVector(){
-
-    vecFilterBle.clear();
+    vecBleDevices.clear();
     int str_len = sFilterBle.length() + 1;
     char cFilterBle[str_len];
     sFilterBle.toCharArray( cFilterBle, str_len);
@@ -52,16 +16,16 @@ void filterStringToVector(){
         printf ("Entry token: %s\n", token);
         char *token2 = strtok_r(token, "=", &end_token);
         int i=0;
+        vecBleDevices.push_back( new BleDevice() );
         while (token2 != NULL)
         {
             printf("Sub tokens = %s\n", token2);
             if (i==0){
-                vecFilterBle.push_back( token2);
-                vecFilterAlias.push_back( token2);
+                vecBleDevices[i]->address = token2;
+                vecBleDevices[i]->alias = token2;
             }
-            else{
-                vecFilterAlias.pop_back();
-                vecFilterAlias.push_back( token2);
+            else if (i==1){
+                vecBleDevices[i]->alias = token2;
             } 
             token2 = strtok_r(NULL, "=", &end_token);
             i+=1;
@@ -70,11 +34,11 @@ void filterStringToVector(){
     }
 
     #ifdef DEBUG
-        for(int i=0; i < vecFilterAlias.size(); i++){
-            printf("vecFilterAlias: %s\n", vecFilterAlias[i].c_str() );
+        for(int i=0; i < vecBleDevices.size(); i++){
+            printf("vecBleDevices Alias: %s\n", vecBleDevices[i]->alias.c_str() );
         }
-        for(int i=0; i < vecFilterBle.size(); i++){
-            printf("vecFilterBle: %s\n", vecFilterBle[i].c_str() );
+        for(int i=0; i < vecBleDevices.size(); i++){
+            printf("vecBleDevices Address: %s\n", vecBleDevices[i]->address.c_str() );
         }
     #endif
 }
@@ -138,7 +102,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
         pub( Topic.Filter, pay, true);
         pay.replace( " ", "");
         sFilterBle = pay;
-        filterStringToVector();
+        createBleDevices();
         report( "New filter activated");
         writeString( "sFilterBle", sFilterBle);
     }
@@ -154,7 +118,6 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
     void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
 
         String sAddress = advertisedDevice->getAddress().toString().c_str();
-        int rssi = advertisedDevice->getRSSI();
         std::string strManufacturerData = advertisedDevice->getManufacturerData();
 
         String manuf = Sprintf("%02x%02x", strManufacturerData[1], strManufacturerData[0]);
@@ -171,18 +134,18 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
         }
 
         #ifdef DEBUG_MQTT
-            //Serial.printf("Advertised Device: %s \n", advertisedDevice->toString().c_str());
+            Serial.printf("Advertised Device: %s \n", advertisedDevice->toString().c_str());
         #endif
         
-        for (int i=0; i < vecFilterBle.size(); i++) {
-            if ( sAddress == vecFilterBle[i] ){
+        for (int i=0; i < vecBleDevices.size(); i++) {
+            if ( sAddress == vecBleDevices[i]->address ){
                 int pos = i;
-                push( arrRssi[pos], rssi);
-                String topic = Topic.Results + "/" + vecFilterAlias[i] + "/" + deviceName;
-                int median = median_of_3( arrRssi[pos][0], arrRssi[pos][1], arrRssi[pos][2] );
-                pubFast( topic, String(  median) );
+                String topic = Topic.Results + "/" + vecBleDevices[i]->alias + "/" + deviceName;
+                auto val = vecBleDevices[i]->getBleValue( advertisedDevice);
+                pubFast( topic, String(  val) );
                 #ifdef DEBUG_MQTT
-                    Serial.printf("Advertising device to topic: %s with RSSI: %d \n", topic.c_str(), median);
+                    Serial.printf("Advertising device to topic <%s> with value: ", topic.c_str() );
+                    Serial.println( val);
                 #endif
                 break;
             }
@@ -569,7 +532,7 @@ void setup() {
         // --------------------- Scanner filter ---------------------
 
         sFilterBle = readString( "sFilterBle", sFilterBle);
-        filterStringToVector();
+        createBleDevices();
 
         #ifdef DEBUG
             Serial.println(">>> Init ScanFilter done.");

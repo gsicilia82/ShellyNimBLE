@@ -20,6 +20,7 @@ extern "C" {
 
 // Custom libs
 #include <Shelly.h>
+#include <BleDevice.h>
 #include <globals.h>
 
 
@@ -103,23 +104,10 @@ struct INFO {
 
 // ------------------------ BLE Filter config ------------------------
 
+// Default filter entry
 String sFilterBle = "c0:6d:62:e7:4e:7a=gts4mini,e2:46:43:e2:2d:21=brieftasche,745ed2ff-f9e8-4a93-a634-b733598c16f0-0-0=pixel7";
 
-std::vector<String> vecFilterBle;
-std::vector<String> vecFilterAlias;
-
-int arrRssi[10][3] = {
-    { -150, -150, -150},
-    { -150, -150, -150},
-    { -150, -150, -150},
-    { -150, -150, -150},
-    { -150, -150, -150},
-    { -150, -150, -150},
-    { -150, -150, -150},
-    { -150, -150, -150},
-    { -150, -150, -150},
-    { -150, -150, -150}
-};
+std::vector<BleDevice*> vecBleDevices;
 
 // ------------------------ MQTT variables ------------------------
 struct TOPIC_MAIN {
