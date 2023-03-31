@@ -285,8 +285,11 @@ stopScript();
 - [ ] Power Messintervall bei 500ms. Wert 100ms führt zu "task watchdog error". Optimierbar?
 - [ ] MaxPower für Relais einrichten. Über mqtt einstellbar (Persistent sichern).
 - [ ] Temperaturmessung hinzufügen? Öffne Relay wenn Temperatur X überschritten wurde?
-- [ ] OneEuroFilter wie bei Espresense hinzufügen
-- [ ] Zusätzlich die Distanz anzeigen, oder Distanz statt RSSI?
+- [x] OneEuroFilter wie bei Espresense hinzufügen
+  - [ ] Parameter optimieren (fcmin und dcutoff)
+- [x] Distanz statt RSSI, aktuell fix mit -70 rssi@1m
+- [ ] rssi@1m aus Advertisement auslesen und über MQTT einstellbar gestalten
+- [ ] Absorbtion pro Device über MQTT einstellbar gestalten
 
 ---
 
