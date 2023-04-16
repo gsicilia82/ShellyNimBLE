@@ -287,7 +287,7 @@ void Shelly2PM::detectPcbVersion(){
         myADE7953.initialize( Pin.I2C_SCL, Pin.I2C_SDA);
         delay(500);
         Energy = myADE7953.getData();
-        if (Energy.voltage[0] > 0){
+        if (Energy.voltage[0] != 0){
             Serial.printf("Auto detected PCB version v0.1.5! Measured voltage: %fV \n", Energy.voltage[0]);
             writeInt( "pcbAutoDetected", 1);
             return;
@@ -305,7 +305,7 @@ void Shelly2PM::detectPcbVersion(){
         saveConfigToNVM();
         myADE7953.initialize( Pin.I2C_SCL, Pin.I2C_SDA);
         Energy = myADE7953.getData();
-        if (Energy.voltage[0] > 0){
+        if (Energy.voltage[0] != 0){
             Serial.printf("Auto detected PCB version v0.1.9! Measured voltage: %fV \n", Energy.voltage[0]);
             writeInt( "pcbAutoDetected", 1);
             return;
