@@ -25,13 +25,14 @@ void BleDevice::initMqttTopics(){
 }
 
 BleDevice::BleDevice(){
-    rssi1m = readInt( "rssi1m", rssi1m);
+    rssi1m = readInt( alias.c_str(), rssi1m);
 }
 
 void BleDevice::initPubSub(){
 
     initMqttTopics();
     mqttClient.subscribe( Topic.RssiAt1m.c_str(), 1);
+    Serial.println(">>> MQTT: Subscribed to RssiAt1m topic: " + Topic.RssiAt1m);
 }
 
 void BleDevice::publishRssi(){
@@ -43,13 +44,13 @@ bool BleDevice::onMqttMessage( String& top, String& pay){
     if (top == Topic.RssiAt1m){
         if ( pay.toInt() == 0 ){
             report("MQTT payload for RssiAt1m is not valid! Restoring last value...");
-            pub( Topic.RssiAt1m, String( rssi1m), true);
+            pub( Topic.RssiAt1m, String( rssi1m), true, 0, true);
             return true;
         }
-        Serial.println(">>> MQTT: Received RssiAt1m for device: " + alias);
+        report("Received RssiAt1m for device: " + alias);
         rssiReceivedOverMqtt = true;
         rssi1m = pay.toInt();
-        writeInt( "rssi1m", rssi1m);
+        writeInt( alias.c_str(), rssi1m);
         return true;
     }
     return false;

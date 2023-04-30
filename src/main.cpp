@@ -712,6 +712,7 @@ void loop() {
             lastSlowLoop = millis();
             Serial.printf("Free memory heap: %u bytes free\r\n", ESP.getFreeHeap() );
             pub( Topic.Online, "true");
+            pub( TopicGlobal.Message, "Ready");
         }
 
     }
