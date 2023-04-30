@@ -1,34 +1,43 @@
 #pragma once
 
 #include <Arduino.h>
-#include <SoftFilters.h>
 #include <NimBLEAdvertisedDevice.h>
 #include <globals.h>
 
 #define NO_RSSI (-128)
-#define ONE_EURO_FCMIN 1e-5f
-#define ONE_EURO_BETA 0.2f
-#define ONE_EURO_DCUTOFF 1e-5f
+#define N 5 // Average filter values
 
 class BleDevice {
 
     private:
+        struct TOPICS {
+            String RssiAt1m;
+        } Topic;
+
         int rssi = NO_RSSI, newest = NO_RSSI, recent = NO_RSSI, oldest = NO_RSSI;
         float raw = 0.0f;
-        float absorption = 3.5f;
-        bool hasValue = false;
+        int rssi1m = -70; // default value
+        
 
-        Reading<Differential<float>> output;
-
-        OneEuroFilter<float, unsigned long> oneEuro;
-        DifferentialFilter<float, unsigned long> diffFilter;
+        // Average filter
+        float values[N] = {};
+        float sum = 0;
+        int index = 0;
+        //
 
         int get1mRssi();
-        bool filter();
+        float mvgAverage( float value);
+        void initMqttTopics();
+
     public:
         String address, alias;
+        float absorption = 3.5f;
+        bool rssiReceivedOverMqtt = false;
 
         BleDevice();
+        void initPubSub();
+        void publishRssi();
+        bool onMqttMessage( String& top, String& pay);
         float getBleValue( NimBLEAdvertisedDevice *advertisedDevice);
         
 };

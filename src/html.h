@@ -114,7 +114,7 @@ const char captive_html[] PROGMEM = R"rawliteral(
             </tr>
             <tr>
                 <td>Device Name:</td>
-                <td><input value="MainDevice" type="text" pattern="[A-Za-z_]+" title="Only letters and '_' are allowed!" id="name" name="name"></td>
+                <td><input value="TestDevice" type="text" pattern="[A-Za-z_]+" title="Only letters and '_' are allowed!" id="name" name="name"></td>
             </tr>
             <tr>
                 <td>Select Model:</td>

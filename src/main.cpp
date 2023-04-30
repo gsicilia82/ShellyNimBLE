@@ -9,6 +9,7 @@ void createBleDevices(){
 
     Serial.printf( "Splitting filter string \"%s\" into tokens: \n", sFilterBle.c_str() );
 
+    BleAbsorbtion = readFloat( "BleAbsorbtion", BleAbsorbtion);
     char *end_str;
     char *token = strtok_r( cFilterBle, " ,.;", &end_str);
     while (token != NULL) {
@@ -22,6 +23,7 @@ void createBleDevices(){
         {
             printf("Sub tokens = %s\n", token2);
             if (i==0){
+                vecBleDevices[last].absorption = BleAbsorbtion;
                 vecBleDevices[last].address = token2;
                 vecBleDevices[last].alias = token2;
             }
@@ -50,12 +52,15 @@ void initPubSub() {
 
     shelly->initPubSub();
 
+    BleAbsorbtion = readFloat( "BleAbsorbtion", BleAbsorbtion);
+
     for (int i = 0; i < 2; i++) {
         pub( Topic.Online, "true");
         pub( Topic.Ip, WiFi.localIP().toString() );
         pub( Topic.Restart, "false", true);
         pub( Topic.HardReset, "false", true);
         pub( Topic.Filter, sFilterBle, true);
+        pub( Topic.Absorbtion, String( BleAbsorbtion), true);
         pub( TopicGlobal.Message, "Ready");
         if( i==0) delay(500);
     }
@@ -63,6 +68,32 @@ void initPubSub() {
     mqttClient.subscribe( Topic.Restart.c_str(), 1);
     mqttClient.subscribe( Topic.HardReset.c_str(), 1);
     mqttClient.subscribe( Topic.Filter.c_str(), 1);
+    mqttClient.subscribe( Topic.Absorbtion.c_str(), 1);
+}
+
+bool onMqttMessageBleDevices( String top, String pay){
+
+    if (top == Topic.Absorbtion){
+        if ( pay.toFloat() == 0 ){
+            report("MQTT payload for Absorbtion is non-numeric! Restoring last value...");
+            pub( Topic.Absorbtion, String( BleAbsorbtion), true);
+            return true;
+        }
+        float absorbtion = pay.toFloat();
+        BleAbsorbtion = absorbtion;
+        writeFloat( "BleAbsorbtion", absorbtion);
+        for(int i=0; i < vecBleDevices.size(); i++){
+            vecBleDevices[ i].absorption = absorbtion;
+        }
+        report("Calculation is using new absorbtion.");
+        return true;
+    }
+
+    for(int i=0; i < vecBleDevices.size(); i++){
+        if ( vecBleDevices[ i].onMqttMessage( top, pay) ) return true;
+    }
+
+    return false;
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
@@ -77,7 +108,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
     if ( mqttIgnoreCounter > 0){
         mqttIgnoreCounter--;
-        Serial.printf(" >>> MQTT command ignored, remaining ignore-counter: %d!\n", mqttIgnoreCounter);
+        Serial.printf(" >>> MQTT command ignored, remaining ignore-counter: %d\n", mqttIgnoreCounter);
         if ( mqttIgnoreCounter == 0){
             mqttDisabled = false;
             Serial.println(">>> MQTT commandhandler enabled again!");
@@ -108,6 +139,8 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
         writeString( "sFilterBle", sFilterBle);
     }
     else if ( shelly->onMqttMessage( top, pay))
+        ;
+    else if ( onMqttMessageBleDevices( top, pay))
         ;
     else Serial.println("MQTT unknown: " + top + " | " + pay);
 
@@ -464,14 +497,15 @@ void initMqttTopicsGlobal(){
 }
 
 void initMqttTopics(){
-    Topic.Online    = TopicGlobal.Device + "/Online";
-    Topic.Ip        = TopicGlobal.Device + "/IP_Address";
-    Topic.Restart   = TopicGlobal.Device + "/Restart";
-    Topic.HardReset = TopicGlobal.Device + "/HardReset";
-    Topic.Filter    = TopicGlobal.Device + "/Filter";
-    Topic.Info      = TopicGlobal.Device + "/Info";
+    Topic.Online     = TopicGlobal.Device + "/Online";
+    Topic.Ip         = TopicGlobal.Device + "/IP_Address";
+    Topic.Restart    = TopicGlobal.Device + "/Restart";
+    Topic.HardReset  = TopicGlobal.Device + "/HardReset";
+    Topic.Filter     = TopicGlobal.Device + "/Filter";
+    Topic.Absorbtion = TopicGlobal.Device + "/Absorbtion";
+    Topic.Info       = TopicGlobal.Device + "/Info";
 
-    Topic.Results   = TopicGlobal.Main + "/results";
+    Topic.Results    = TopicGlobal.Main + "/results";
     
 }
 
@@ -635,10 +669,20 @@ void loop() {
 
         // --------------------- Disable MQTT handler temporary ---------------------
 
-        if ( mqttDisabled && ( millis() - mqttDisableTime > 5000) ){
+        if ( mqttDisabled && ( millis() - mqttDisableTime > 3000) ){
             mqttDisabled = false;
             mqttIgnoreCounter = 0;
             Serial.println(">>> MQTT commandhandler enabled again!");
+
+            // Init PubSub after enabled MQTT to receive retained RssiAt1m values
+            if ( !bleDevicesInitPubSubDone){
+                bleDevicesInitPubSubDone = true;
+                bleDevicesPubSubTime = millis();
+                Serial.println(">>> Init PubSub for BLE devices!");
+                for(int i=0; i < vecBleDevices.size(); i++){
+                    vecBleDevices[ i].initPubSub();
+                }
+            }
         }
 
         // --------------------- Loop Shelly ---------------------
@@ -647,6 +691,18 @@ void loop() {
         if ( millis() - shellyLoop > 100){
             shellyLoop = millis();
             shelly->loop();
+        }
+
+        // --------------------- Check / Init RssiAt1m for BLE devices ---------------------
+        
+        if ( !bleDevicesRssiInitialized && bleDevicesPubSubTime > 0 && ( millis() - bleDevicesPubSubTime > 5000) ){
+            bleDevicesRssiInitialized = true;
+            for(int i=0; i < vecBleDevices.size(); i++){
+                if ( !vecBleDevices[ i].rssiReceivedOverMqtt){
+                    Serial.println(">>> MQTT: RssiAt1m not set! Publish for device: " + vecBleDevices[ i].alias);
+                    vecBleDevices[ i].publishRssi();
+                }
+            }
         }
 
         // --------------------- Slow Loop ---------------------

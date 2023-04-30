@@ -79,6 +79,19 @@ void writeInt( const char* key, int value, const char* space /*= "shelly"*/){
     preferences.end();
 }
 
+float readFloat( const char* key, float defVal, const char* space /*= "shelly"*/){
+    preferences.begin( space, false);
+    float tmp = preferences.getFloat( key, defVal);
+    preferences.end();
+    return tmp;
+}
+
+void writeFloat( const char* key, float value, const char* space /*= "shelly"*/){
+    preferences.begin( space, false);
+    preferences.putFloat( key, value);
+    preferences.end();
+}
+
 String readString( const char* key, String defVal, const char* space /*= "shelly"*/){
     preferences.begin( space, false);
     String tmp = preferences.getString( key, defVal);

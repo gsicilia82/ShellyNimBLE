@@ -41,6 +41,7 @@ bool pubFast(String topic, String payload, bool ignoreReceivings=false, uint8_t 
 
 void report( String msg, bool withPub=true);
 
+boolean isNumeric(String str);
 
 //String boolToString(bool b);
 
@@ -51,6 +52,10 @@ void clearPreferences( const char* space="shelly");
 int readInt( const char* key, int defVal, const char* space="shelly");
 
 void writeInt( const char* key, int value, const char* space="shelly");
+
+float readFloat( const char* key, float defVal, const char* space="shelly");
+
+void writeFloat( const char* key, float value, const char* space="shelly");
 
 String readString( const char* key, String defVal, const char* space="shelly");
 

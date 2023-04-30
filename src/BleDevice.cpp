@@ -9,20 +9,50 @@ int BleDevice::get1mRssi(){
 
     Über MQTT korrigierbar machen
     */
-    return -68;
+    return rssi1m;
 }
 
+float BleDevice::mvgAverage( float value){
+    sum -= values[index];
+    sum += value;
+    values[index] = value;
+    index = (index + 1) % N;
+    return sum / N;
+}
 
-BleDevice::BleDevice() : oneEuro{OneEuroFilter<float, unsigned long>(1, ONE_EURO_FCMIN, ONE_EURO_BETA, ONE_EURO_DCUTOFF)}{}
+void BleDevice::initMqttTopics(){
+    Topic.RssiAt1m = TopicGlobal.Main + "/rssiAt1m/" + alias;
+}
 
+BleDevice::BleDevice(){
+    rssi1m = readInt( "rssi1m", rssi1m);
+}
 
-bool BleDevice::filter(){
+void BleDevice::initPubSub(){
 
-    Reading<float, unsigned long> inter1, inter2;
-    inter1.timestamp = millis();
-    inter1.value = raw;
+    initMqttTopics();
+    mqttClient.subscribe( Topic.RssiAt1m.c_str(), 1);
+}
 
-    return oneEuro.push(&inter1, &inter2) && diffFilter.push(&inter2, &output);
+void BleDevice::publishRssi(){
+    pub( Topic.RssiAt1m, String( rssi1m), false, 0, true);
+}
+
+bool BleDevice::onMqttMessage( String& top, String& pay){
+
+    if (top == Topic.RssiAt1m){
+        if ( pay.toInt() == 0 ){
+            report("MQTT payload for RssiAt1m is not valid! Restoring last value...");
+            pub( Topic.RssiAt1m, String( rssi1m), true);
+            return true;
+        }
+        Serial.println(">>> MQTT: Received RssiAt1m for device: " + alias);
+        rssiReceivedOverMqtt = true;
+        rssi1m = pay.toInt();
+        writeInt( "rssi1m", rssi1m);
+        return true;
+    }
+    return false;
 }
 
 float BleDevice::getBleValue( NimBLEAdvertisedDevice *advertisedDevice){
@@ -41,14 +71,17 @@ float BleDevice::getBleValue( NimBLEAdvertisedDevice *advertisedDevice){
     float ratio = (get1mRssi() - rssi) / (10.0f * absorption);
     raw = pow(10, ratio);
 
-    if ( filter() ) hasValue = true;
+    float fTmp = mvgAverage( raw);
 
-    #ifdef DEBUG
-        Serial.print( "Device: <" + alias + "> Dist: " + String( raw));
-        if ( hasValue) Serial.println( " | " + String( output.value.position));
-        else Serial.println();
-    #endif
+/*
+    Serial.println( "Device: <" + alias + "> Dist: " + String( raw) + " | Avg: " + String( fTmp));
+    for ( float i : values) {
+        Serial.print( i);
+        Serial.print( " ");
+    }
+    Serial.println();
+*/
 
-    return hasValue ? output.value.position : raw;
+    return fTmp;
 
 }
