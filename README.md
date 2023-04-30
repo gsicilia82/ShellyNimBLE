@@ -244,15 +244,11 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
         // set boolean mode
         obj.common.type = "boolean";
     }
-
+    
     setObject( id, obj);
-
 });
 
 $('mqtt-client.0.shellyscanner.results.*').each(function ( id, i) {
-    let splittedID = id.split(".");
-    let lastItem = splittedID.pop();
-    let deviceName = splittedID.pop();
     let obj = getObject( id);
 
     if ( obj.common.type === "mixed"){
@@ -261,7 +257,14 @@ $('mqtt-client.0.shellyscanner.results.*').each(function ( id, i) {
     }
 
     setObject( id, obj);
+});
 
+$('mqtt-client.0.shellyscanner.rssiAt1m.*').each(function ( id, i) {
+    let obj = getObject( id);
+
+    obj.common.custom["mqtt-client.0"].publish = true;
+    obj.common.custom["mqtt-client.0"].retain = true;
+    setObject( id, obj);
 });
 
 stopScript();
