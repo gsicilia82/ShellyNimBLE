@@ -244,7 +244,7 @@ $('mqtt-client.0.shellyscanner.devices.*.*').each(function ( id, i) {
         // set boolean mode
         obj.common.type = "boolean";
     }
-    
+
     setObject( id, obj);
 });
 
@@ -291,8 +291,8 @@ stopScript();
 - [x] OneEuroFilter wie bei Espresense hinzufügen
   - [ ] Parameter optimieren (fcmin und dcutoff)
 - [x] Distanz statt RSSI, aktuell fix mit -70 rssi@1m
-- [ ] rssi@1m aus Advertisement auslesen und über MQTT einstellbar gestalten
-- [ ] Absorbtion pro Device über MQTT einstellbar gestalten
+- [x] rssi@1m aus Advertisement auslesen und über MQTT einstellbar gestalten
+- [x] Absorbtion pro Device über MQTT einstellbar gestalten
 
 ---
 
