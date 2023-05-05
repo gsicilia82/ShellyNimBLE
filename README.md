@@ -292,8 +292,6 @@ stopScript();
 
 * Ein User hatte nach der erfolgter Erst-Konfiguration über das CaptivePortal ein Boot-Loop. Bisher konnte ich den Fehler weder nachstellen, noch beheben.
 
-* 
-
 ## Geplant
 
 * [ ] ioBroker JavaScript erweitern: Lösche States unter "results" wenn zugehöriger Shelly unter "devices" nicht mehr existiert. Z.B. nach HardReset / Umbenennen eines Shelly.
