@@ -5,15 +5,22 @@ Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core
 Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommunikation erfolgt über MQTT (optimiert für ioBroker).
 Mit der aktuellen Version können BLE Geräte über ihre MAC oder, wenn vorhanden, über ihre iBeacon UUID gescannt und gefiltert werden (Funktion als Whitelist). 
 
+Der Scanprozess ist kontinuierlich aktiv. Meine Smartwatch "Amazfit GTS4 Mini" sendet sekündlich einen BLE Advertisement. Bei meinen Tests wurden ca. 330-360 von 500 Advertisements empfangen. Das bedeutet, dass durchschnittlich innerhalb von 3 Sekunden 2 Aktualisierungen empfangen werden.
+
+Über MQTT werden zwei Werte pro BLE-Gerät übertragen:
+
+1. der empfangene, ungefilterte RSSI-Wert 
+
+2. ein gemittelter Wert in Meter. Berechnung: Zunächst wird vom RSSI der Median der letzten drei Werte berechnet, anschließend erfolgt die Umrechnung in Meter, abschließend wird ein laufender Mittelwert über die letzten 5 Werte gebildet. 
+
 Aktuell werden folgende Shelly unterstützt:
 
 * Shelly-Plus-1(PM)
 * Shelly-Plus-2PM
 * Shelly-Plus-i4
+  
 
-
-
-Inhaltsvereichnis:
+**Inhaltsvereichnis:**
 
 * [ioBroker States Übersicht](#ioBroker-States-Übersicht)
 * [MQTT Konfiguration ioBroker](#mqtt-konfiguration-ioBroker)
@@ -33,7 +40,7 @@ Die States innerhalb von ioBroker werden automatisch erstellt, wenn eine MQTT In
 
 ![](pictures/iobroker/020_iobroker_states_overview.png  "ioBroker States")
 
-Im State `mqtt-client.0.shellyscanner.devices.*.Filter` können bis zu 10 MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden. Außerdem können optional Aliase vergeben werden. Nach dem Flashprozess ist ein Beispiel im State hinterlegt.
+Im State `mqtt-client.0.shellyscanner.devices.*.Filter` können MAC-Adressen / iBeacon-UUIDs eingegeben werden. Die Eingaben müssen über ein Komma getrennt werden. Außerdem können optional Aliase vergeben werden. Nach dem Flashprozess ist ein Beispiel im State hinterlegt.
 
 ## MQTT Konfiguration ioBroker
 
