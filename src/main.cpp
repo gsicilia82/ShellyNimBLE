@@ -423,11 +423,16 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
 
 void WiFiEvent(WiFiEvent_t event) {
 
+    String locIP;
     switch(event) {
         case SYSTEM_EVENT_STA_GOT_IP:
             Serial.print("WiFi connected with IP address: ");
             Serial.println( WiFi.localIP() );
             writeInt( "wifiValidated", 1);
+            locIP = "Scanner_" + WiFi.localIP().toString();
+            locIP.replace( ".", "");
+            Serial.println("MQTT: Connecting to broker with ID: " + locIP);
+            mqttClient.setClientId( locIP.c_str());
             connectToMqtt();
             break;
 
@@ -478,9 +483,6 @@ void initNetwork(){
 	mqttClient.onConnect( onMqttConnect);
     mqttClient.onDisconnect( onMqttDisconnect);
     mqttClient.onMessage( onMqttMessage);
-    String locIP = String( WiFi.localIP() );
-    locIP.replace( ".", "");
-    mqttClient.setClientId(  locIP.c_str() );
 
     mqttIgnoreCounter = 0;
 
