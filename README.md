@@ -5,6 +5,16 @@ Dieses Projekt dient dazu, Shelly Devices mit ESP32 Microcontroller (Single-Core
 Die Firmware kann dazu genutzt werden, die Shelly weiterhin zur Steuerung von Lichtern oder Rollläden zu verwenden. Die Kommunikation erfolgt über MQTT (optimiert für ioBroker).
 Mit der aktuellen Version können BLE Geräte über ihre MAC oder, wenn vorhanden, über ihre iBeacon UUID gescannt und gefiltert werden (Funktion als Whitelist). 
 
+Aktuell werden folgende Shelly unterstützt:
+
+* Shelly-Plus-1(PM)
+* Shelly-Plus-2PM
+* Shelly-Plus-i4
+
+
+
+Inhaltsvereichnis:
+
 * [ioBroker States Übersicht](#ioBroker-States-Übersicht)
 * [MQTT Konfiguration ioBroker](#mqtt-konfiguration-ioBroker)
 * [Firmware Binaries unter Releases](#Firmware-Binaries-unter-Releases)
