@@ -119,7 +119,6 @@ std::vector<BleDevice> vecBleDevices;
 struct TOPIC_MAIN {
     String Filter,
     Absorbtion,
-    Results,
     Online,
     Ip,
     Config,

@@ -24,6 +24,7 @@ struct TOPIC_GLOBAL {
     String dbg,
     Main,
     Message,
+    Results,
     Device;
 };
 

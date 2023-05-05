@@ -56,11 +56,15 @@ bool BleDevice::onMqttMessage( String& top, String& pay){
     return false;
 }
 
-float BleDevice::getBleValue( NimBLEAdvertisedDevice *advertisedDevice){
+bool BleDevice::reportBleValue( String& sAddress, NimBLEAdvertisedDevice *advertisedDevice){
+
+    if ( sAddress != address) return false;
 
     oldest = recent;
     recent = newest;
     newest = advertisedDevice->getRSSI();
+
+    pubFast( TopicGlobal.Main + "/results_raw" + "/" + alias + "/" + deviceName, String(  newest) );
 
     int the_max = max(max(newest, recent), oldest);
     int the_min = min(min(newest, recent), oldest);
@@ -83,6 +87,13 @@ float BleDevice::getBleValue( NimBLEAdvertisedDevice *advertisedDevice){
     Serial.println();
 */
 
-    return fTmp;
+    String topic = TopicGlobal.Results + "/" + alias + "/" + deviceName;
+    pubFast( topic, String(  fTmp) );
 
+    #ifdef DEBUG_MQTT
+        Serial.printf("Advertising device to topic <%s> with value: ", topic.c_str() );
+        Serial.println( val);
+    #endif
+
+    return true;
 }

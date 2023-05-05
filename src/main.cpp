@@ -172,17 +172,7 @@ class MyAdvertisedDeviceCallbacks: public NimBLEAdvertisedDeviceCallbacks {
         #endif
         
         for (int i=0; i < vecBleDevices.size(); i++) {
-            if ( sAddress == vecBleDevices[i].address ){
-                int pos = i;
-                String topic = Topic.Results + "/" + vecBleDevices[i].alias + "/" + deviceName;
-                auto val = vecBleDevices[i].getBleValue( advertisedDevice);
-                pubFast( topic, String(  val) );
-                #ifdef DEBUG_MQTT
-                    Serial.printf("Advertising device to topic <%s> with value: ", topic.c_str() );
-                    Serial.println( val);
-                #endif
-                break;
-            }
+            if ( vecBleDevices[i].reportBleValue( sAddress, advertisedDevice) ) break;
         }
     }
 
@@ -494,6 +484,7 @@ void initNetwork(){
 void initMqttTopicsGlobal(){
     TopicGlobal.Main    = "shellyscanner"; // mqtt main topic
     TopicGlobal.Device  = TopicGlobal.Main + "/devices/" + deviceName;
+    TopicGlobal.Results = TopicGlobal.Main + "/results";
     TopicGlobal.dbg     = TopicGlobal.Device + "/Debug/Dbg_";
     TopicGlobal.Message = TopicGlobal.Device + "/Message";
 }
@@ -506,9 +497,6 @@ void initMqttTopics(){
     Topic.Filter     = TopicGlobal.Device + "/Filter";
     Topic.Absorbtion = TopicGlobal.Device + "/Absorbtion";
     Topic.Info       = TopicGlobal.Device + "/Info";
-
-    Topic.Results    = TopicGlobal.Main + "/results";
-    
 }
 
 

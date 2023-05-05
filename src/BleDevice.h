@@ -38,6 +38,6 @@ class BleDevice {
         void initPubSub();
         void publishRssi();
         bool onMqttMessage( String& top, String& pay);
-        float getBleValue( NimBLEAdvertisedDevice *advertisedDevice);
+        bool reportBleValue( String& sAddress, NimBLEAdvertisedDevice *advertisedDevice);
         
 };
