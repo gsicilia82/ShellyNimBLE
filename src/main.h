@@ -13,10 +13,12 @@ extern "C" {
 #include <AsyncElegantOTA.h>
 
 // Captive Portal dependecies
-#include "SPIFFS.h"
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
+
+extern const uint8_t index_html[] asm("_binary_src_index_html_start");
+const String html = String((const char*)index_html);
 
 // Custom libs
 #include <Shelly.h>

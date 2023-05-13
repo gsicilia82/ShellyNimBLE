@@ -191,14 +191,14 @@ class CaptiveRequestHandler : public AsyncWebHandler {
 	}
 
 	void handleRequest(AsyncWebServerRequest *request) {
-		request->send(SPIFFS, "/index.html", "text/html"); 
+		request->send(200, "text/html", html);
 	}
 	};
 
 void setupApServer(){
 
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-		request->send(SPIFFS, "/index.html", "text/html"); 
+		request->send(200, "text/html", html);
 		Serial.println("Client Connected");
 	});
     
@@ -504,11 +504,6 @@ void setup() {
 
     Serial.begin(115200);
     Serial.println();
-
-    if(!SPIFFS.begin()){
-        Serial.println("An Error has occurred while mounting SPIFFS");
-        return;
-    }
 
     // --------------------- Init Main ---------------------
 
