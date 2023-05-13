@@ -13,10 +13,10 @@ extern "C" {
 #include <AsyncElegantOTA.h>
 
 // Captive Portal dependecies
+#include "SPIFFS.h"
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
-#include <html.h>
 
 // Custom libs
 #include <Shelly.h>
