@@ -431,6 +431,7 @@ void WiFiEvent(WiFiEvent_t event) {
             int wifiValidated = readInt( "wifiValidated", 0);
             if ( wifiValidated == 1){
                 xTimerStop(mqttReconnectTimer, 0);
+                xTimerStart(wifiReconnectTimer, 0);
             }
             else {
                 Serial.println("WIFI not reachable, wrong credentials? HardReset ESP32 and restarting into AP mode...");
@@ -464,8 +465,12 @@ void initNetwork(){
 
     mqttRePublishAgain = xTimerCreate("wifiTimer", pdMS_TO_TICKS(30000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(initPubSub));
     mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(5000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+    wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(5000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
 
     WiFi.onEvent(WiFiEvent);
+
+    WiFi.setAutoConnect(false);
+    WiFi.setAutoReconnect(false);
 
     firstConnectAfterBoot = true;
 

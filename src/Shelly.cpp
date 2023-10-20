@@ -782,7 +782,11 @@ bool Shelly2PM::onMqttMessage(String& topic, String& pay){
         }
     }
     else if (topic == Topic.CoverCalib) {
-        if ( pay == "true") coverCalibrateRoutine();
+        if ( pay == "true"){
+            coverCalibState = NOT_CALIBRATED;
+            writeInt( "coverCalibState", coverCalibState);
+            coverCalibrateRoutine();
+        }
     }
     else if (topic == Topic.Config) {
         bool convertOk = setConfigFromJson( pay);

@@ -40,6 +40,7 @@ const String html = String((const char*)index_html);
 #endif
 
 TimerHandle_t mqttReconnectTimer;
+TimerHandle_t wifiReconnectTimer;
 TimerHandle_t mqttRePublishAgain;
 bool firstConnectAfterBoot = false;
 
