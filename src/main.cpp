@@ -365,6 +365,8 @@ void connectToMqtt() {
 		return;
 	}
 
+    printf("Actual mqtt client id: %s\n" ,mqttClient.getClientId() );
+
     Serial.println( "Connecting to MQTT " + mqttServer + ":" + String(mqttPort) + "...");
     mqttClient.setServer( mqttServer.c_str(), mqttPort);
     mqttClient.connect();
@@ -422,7 +424,8 @@ void WiFiEvent(WiFiEvent_t event) {
             locIP = "Scanner_" + WiFi.localIP().toString();
             locIP.replace( ".", "");
             Serial.println("MQTT: Connecting to broker with ID: " + locIP);
-            mqttClient.setClientId( locIP.c_str());
+            //mqttClient.setClientId( locIP.c_str());
+            mqttClient.setClientId( deviceName.c_str() );
             connectToMqtt();
             break;
 
