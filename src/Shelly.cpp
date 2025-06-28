@@ -892,7 +892,8 @@ void Shelly2PM::loop(){
 #ifdef TEST_COVERSECURITY
         else if ( isCoverDir != coverDirs.stopped && millis() > coverTargetTime){
 #else
-        else if ( isCoverDir != coverDirs.stopped && ( millis() > coverTargetTime || (millis() - coverStartTime > 2000 && Energy.powerAcc < limPowLow) ) ){
+        // Execute stopCover if calculated coverTargetTime is reached (if: 0 < regularCoverTarget < 100)  or if power measurement is low
+        else if ( isCoverDir != coverDirs.stopped && ( (millis() > coverTargetTime && regularCoverTarget > 0 && regularCoverTarget < 100) || (millis() - coverStartTime > 2000 && Energy.powerAcc < limPowLow) ) ){
 #endif
         
             #ifdef DEBUG
